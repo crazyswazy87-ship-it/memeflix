@@ -15,7 +15,7 @@
 .input1
 {
   color: var(--ty);
-  border: solid var(--nyake);
+  border:1px solid var(--nyake);
   font-family: var(--mirista);
 }
 
@@ -25,7 +25,7 @@
   color:var(--ty);
   font-weight: bolder;
   font-family: var(--mirista);
-  width: 120px;
+  width: 190px;
   border-radius: 10px;
   border: 2px solid var(--nyake);
   font-size: 16px;
@@ -44,6 +44,33 @@
   cursor: pointer;
   z-index: 1;
   font-size: 18px;
+}
+
+.submittt-btn
+{
+  background-color: var(--kibla);
+  color:var(--ty);
+  font-weight: bolder;
+  font-family: var(--mirista);
+  width: 120px;
+  border-radius: 10px;
+  border: 2px solid var(--nyake);
+  font-size: 16px;
+  overflow: hidden;
+  justify-self: center;
+  align-self: center;
+  display: flex;
+}
+
+.submittt-btn:hover
+{
+  background-color: transparent;
+  border: 2px solid var(--ty);
+  transition: 0.4s;
+  color: var(--nyake);
+  cursor: pointer;
+  z-index: 1;
+  transform: scale(0.94);
 }
 
 .msg

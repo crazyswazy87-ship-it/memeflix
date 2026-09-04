@@ -21,9 +21,9 @@ const Bottombar = () => {
                       <img 
                         src= {link.imgURL}
                         alt= {link.label}
-                        className={`mboto ${isActive &&'bg-red-600'}`}
+                        className={`mboto ${isActive &&'bg-red-800'}`}
                       />
-                      {link.label}
+                      <span className="digz">{link.label}</span>
 
                   </Link>
                 </li>

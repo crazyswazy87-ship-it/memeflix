@@ -1,0 +1,1 @@
+export { default as Denzel } from './Bin/AdminPanel.tsx' 

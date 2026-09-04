@@ -1,9 +1,9 @@
 import './loader.css'
 const Loader = () => {
   return (
-    <div>l
+    <div>
       <img 
-        src="/assetss/icons/loader.svg"
+        src="/assetss/icons/load.gif"
         alt="loader"
         className="loader-icon"
       />

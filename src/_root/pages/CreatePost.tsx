@@ -1,24 +1,27 @@
 import PostFormm from "@/components/forms/PostFormm"
+import { Link } from "react-router-dom"
 
 
 
 const CreatePost = () => {
   return (
-    <div className="flex flex-1 mt-20 justify-center">
-      <div className="common-container">
+    <div className="yoyoma">
+      <div className="common-conta1ner">
         <div className="publish-des">
           <img 
-            src="/assetss/icons/add-post.svg"
-            width={36}
-            height={36}
+            src="/assetss/icons/add-post-icon.png"
+            width={46}
+            height={46}
             alt="add"
           />
-          <h2 className="h3-bold md:h2-bold text-left w-full">
+          <h2 className="h3-bold md:h2-bold text-center w-full mb-3">
             Publish Your Meme
           </h2>
         </div>
-
-        <PostFormm/>
+        <PostFormm action= "Publish"/>
+        <Link to={'/blockseven'} className="brand">
+          FROM BLOCK SEVEN
+        </Link>
       </div>
     </div>
   )

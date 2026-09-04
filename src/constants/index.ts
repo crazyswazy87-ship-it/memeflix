@@ -1,26 +1,27 @@
 export const sidebarLinks = [
   {
-    imgURL: "/assetss/icons/home.svg",
+    imgURL: "/assetss/icons/home-smile-svgrepo-com (1).svg",
     route: "/",
     label: "Home",
   },
   {
-    imgURL: "/assetss/icons/wallpaper.svg",
+    imgURL: "/assetss/icons/slider-horizontal-1-svgrepo-com (1).svg",
     route: "/explore",
     label: "Explore",
   },
   {
-    imgURL: "/assetss/icons/people.svg",
+
+    imgURL: "/assetss/icons/users-group-rounded-svgrepo-com (1).svg",
     route: "/all-users",
-    label: "Memers",
+    label: "Memelords",
   },
   {
-    imgURL: "/assetss/icons/bookmark.svg",
+    imgURL: "/assetss/icons/archive-1-svgrepo-com (1).svg",
     route: "/saved",
     label: "Saved",
   },
   {
-    imgURL: "/assetss/icons/gallery-add.svg",
+    imgURL: "/assetss/icons/gallery-add-svgrepo-com.svg",
     route: "/create-post",
     label: "Publish",
   },
@@ -28,22 +29,27 @@ export const sidebarLinks = [
 
 export const bottombarLinks = [
   {
-    imgURL: "/assetss/icons/home.svg",
+    imgURL: "/assetss/icons/home-smile-svgrepo-com (1).svg",
     route: "/",
     label: "Home",
   },
   {
-    imgURL: "/assetss/icons/wallpaper.svg",
+    imgURL: "/assetss/icons/users-group-rounded-svgrepo-com (1).svg",
+    route: "/all-users",
+    label: "Memelords",
+  },
+  {
+    imgURL: "/assetss/icons/slider-horizontal-1-svgrepo-com (1).svg",
     route: "/explore",
     label: "Explore",
   },
   {
-    imgURL: "/assetss/icons/bookmark.svg",
+    imgURL: "/assetss/icons/archive-1-svgrepo-com (1).svg",
     route: "/saved",
     label: "Saved",
   },
   {
-    imgURL: "/assetss/icons/gallery-add.svg",
+    imgURL: "/assetss/icons/gallery-add-svgrepo-com.svg",
     route: "/create-post",
     label: "Publish",
   },

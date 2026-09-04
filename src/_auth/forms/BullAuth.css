@@ -1,0 +1,715 @@
+:root {
+      --bg-sky: #59bee6;
+      --transition-speed: 0.45s;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+
+
+    /* Color state palettes for the bull */
+    .theme-orange {
+      --bull-body: #49c58d;
+      --bull-dark: #2a7352;
+      --bull-tuft: #1e5a3e;
+      --bull-pupil: #1e5a3e;
+      --btn-bg: #2a7352;
+      --btn-hover: #1e5a3e;
+      --btn-accent: #38a374;
+    }
+
+    .theme-red{
+      --bull-body: #f59e0b;
+      --bull-dark: #b45309;
+      --bull-tuft: #92400e;
+      --bull-pupil: #92400e;
+      --btn-bg: #ea580c;
+      --btn-hover: #c2410c;
+      --btn-accent: #f97316;
+    }
+
+    .theme-green {
+      --bull-body: #ee1d23;
+      --bull-dark: #9e0000;
+      --bull-tuft: #7a0000;
+      --bull-pupil: #d40000;
+      --btn-bg: #e65100;
+      --btn-hover: #bf360c;
+      --btn-accent: #f26a2a;
+    }
+
+    .theme-success {
+      --bull-body: #10b981;
+      --bull-dark: #065f46;
+      --bull-tuft: #047857;
+      --bull-pupil: #065f46;
+      --btn-bg: #059669;
+      --btn-hover: #047857;
+      --btn-accent: #34d399;
+    }
+
+    /* Dynamic SVG transitions */
+    .bull-svg path,
+    .bull-svg ellipse,
+    .bull-svg circle,
+    .bull-svg g,
+    .bull-svg line {
+      transition: fill var(--transition-speed) ease, stroke var(--transition-speed) ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .bull-body-fill { fill: var(--bull-body); }
+    .bull-dark-fill { fill: var(--bull-dark); }
+    .bull-tuft-fill { fill: var(--bull-tuft); }
+    .bull-pupil-fill { fill: var(--bull-pupil); }
+    .bull-dark-stroke { stroke: var(--bull-dark); }
+
+    /* Eye lid styles for blindfold/peeking/blinking */
+    .eyelid {
+      fill: var(--bull-body);
+      transform-origin: center;
+      transform-box: fill-box;
+      transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .eyelid-closed {
+      transform: scaleY(1);
+    }
+    .eyelid-open {
+      transform: scaleY(0);
+    }
+
+    /* Head & Eye tracking transitions */
+    .pupil {
+      transition: transform 0.15s ease-out;
+    }
+
+    /* Shaking animation on error */
+    @keyframes headShake {
+      0%, 100% { transform: translateX(0) rotate(0deg); }
+      15% { transform: translateX(-16px) rotate(-2deg); }
+      30% { transform: translateX(14px) rotate(2deg); }
+      45% { transform: translateX(-10px) rotate(-1.5deg); }
+      60% { transform: translateX(8px) rotate(1deg); }
+      75% { transform: translateX(-4px) rotate(-0.5deg); }
+    }
+    .animate-shake {
+      animation: headShake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    /* Happy bounce on success */
+    @keyframes happyBounce {
+      0%, 100% { transform: translateY(0) scale(1); }
+      35% { transform: translateY(-28px) scale(1.03, 0.97); }
+      65% { transform: translateY(6px) scale(0.98, 1.02); }
+    }
+    .animate-bounce-happy {
+      animation: happyBounce 0.8s cubic-bezier(0.28, 0.84, 0.42, 1) both;
+    }
+
+    /* Floating subtle idle breathing */
+    @keyframes gentleFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    .animate-float {
+      animation: gentleFloat 4s ease-in-out infinite;
+    }
+
+    /* Eyebrow variations */
+    .brow-idle-left { transform: rotate(0deg); }
+    .brow-idle-right { transform: rotate(0deg); }
+    
+    .brow-focus-left { transform: translateY(-4px) rotate(-3deg); }
+    .brow-focus-right { transform: translateY(-4px) rotate(3deg); }
+    
+    .brow-angry-left { transform: translateY(4px) rotate(14deg); }
+    .brow-angry-right { transform: translateY(4px) rotate(-14deg); }
+
+    .brow-happy-left { transform: translateY(-7px) rotate(-6deg); }
+    .brow-happy-right { transform: translateY(-7px) rotate(6deg); }
+
+    /* Custom Input styling inside the bull holder */
+    .auth-input {
+      background: transparent;
+      outline: none;
+      border: none;
+      font-size: 14px;
+      line-height: 1.4;
+      font-family: 'Roboto', sans-serif;
+      color: #333333;
+    }
+    .auth-input::placeholder {
+      color: #9ca3af;
+      font-weight: 300;
+    }
+
+    /* Action button */
+    .btn-action {
+      background-color: var(--btn-accent);
+      box-shadow: 0 4px 0 var(--btn-hover);
+      transition: all 0.15s ease;
+    }
+    .btn-action:hover {
+      background-color: var(--btn-hover);
+      transform: translateY(1px);
+      box-shadow: 0 3px 0 var(--bull-tuft);
+    }
+    .btn-action:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 var(--bull-tuft);
+    }
+
+/* Local utility classes replacing the Tailwind CDN used by the original HTML. */
+.min-h-screen{min-height:100vh}.flex{display:flex}.flex-col{flex-direction:column}
+.flex-1{flex:1 1 0%}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}
+.items-end{align-items:flex-end}.justify-between{justify-content:space-between}
+.justify-center{justify-content:center}.justify-end{justify-content:flex-end}
+.justify-around{justify-content:space-around}.relative{position:relative}.absolute{position:absolute}
+.fixed{position:fixed}.inset-0{inset:0}.left-1\/2{left:50%}.right-2\.5{right:.625rem}
+.-translate-x-1\/2{transform:translateX(-50%)}.w-full{width:100%}.w-auto{width:auto}
+.max-w-sm{max-width:24rem}.max-w-\[90\%\]{max-width:90%}.max-w-\[620px\]{max-width:620px}
+.w-1\.5{width:.375rem}.w-2{width:.5rem}.w-4{width:1rem}.w-7{width:1.75rem}.w-8{width:2rem}
+.w-16{width:4rem}.h-1\.5{height:.375rem}.h-2{height:.5rem}.h-4{height:1rem}
+.h-9{height:2.25rem}.h-16{height:4rem}.h-full{height:100%}
+.p-1{padding:.25rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.px-0\.5{padding-left:.125rem;padding-right:.125rem}
+.px-2{padding-left:.5rem;padding-right:.5rem}.px-3{padding-left:.75rem;padding-right:.75rem}
+.px-3\.5{padding-left:.875rem;padding-right:.875rem}.px-4{padding-left:1rem;padding-right:1rem}
+.pl-3\.5{padding-left:.875rem}.pr-9{padding-right:2.25rem}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}
+.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}
+.py-2\.5{padding-top:.625rem;padding-bottom:.625rem}.py-4{padding-top:1rem;padding-bottom:1rem}
+.pt-8{padding-top:2rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mx-auto{margin-left:auto;margin-right:auto}
+.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-4{gap:1rem}
+.-ml-1{margin-left:-.25rem}.-mr-1{margin-right:-.25rem}
+.rounded{border-radius:.25rem}.rounded-md{border-radius:.375rem}.rounded-lg{border-radius:.5rem}
+.rounded-xl{border-radius:.75rem}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}
+.rounded-l-xl{border-radius:.75rem 0 0 .75rem}.rounded-r-xl{border-radius:0 .75rem .75rem 0}
+.overflow-hidden{overflow:hidden}.whitespace-nowrap{white-space:nowrap}.block{display:block}.inline-flex{display:inline-flex}
+.text-center{text-align:center}.uppercase{text-transform:uppercase}.underline{text-decoration:underline}
+.underline-offset-4{text-underline-offset:4px}.select-none{user-select:none}.cursor-pointer{cursor:pointer}
+.font-thin{font-weight:100}.font-light{font-weight:300}.font-medium{font-weight:500}.font-semibold{font-weight:600}.font-bold{font-weight:700}
+.text-xs{font-size:.75rem;line-height:1rem}.text-sm{font-size:.875rem;line-height:1.25rem}
+.text-lg{font-size:1.125rem;line-height:1.75rem}.text-2xl{font-size:1.5rem;line-height:2rem}
+.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-5xl{font-size:3rem;line-height:1}
+.text-\[11px\]{font-size:11px}.tracking-wide{letter-spacing:.025em}.tracking-widest{letter-spacing:.1em}
+.text-white{color:#fff}.text-white\/70{color:rgba(255,255,255,.7)}.text-white\/80{color:rgba(255,255,255,.8)}
+.text-white\/90{color:rgba(255,255,255,.9)}.text-gray-400{color:#9ca3af}.text-gray-500{color:#6b7280}
+.text-gray-700{color:#374151}.text-gray-800{color:#1f2937}.text-emerald-600{color:#059669}
+.bg-white{background:#fff}.bg-red-800{background:#991b1b}.bg-emerald-100{background:#d1fae5}
+.bg-black\/15{background:rgba(0,0,0,.15)}.bg-black\/40{background:rgba(0,0,0,.4)}
+.border{border-width:1px;border-style:solid}.border-4{border:4px solid}.border-b{border-bottom:1px solid}
+.border-t{border-top:1px solid}.border-gray-200{border-color:#e5e7eb}.border-red-500{border-color:#ef4444}
+.shadow-md{box-shadow:0 4px 6px rgba(0,0,0,.1)}.shadow-lg{box-shadow:0 10px 15px rgba(0,0,0,.15)}
+.shadow-2xl{box-shadow:0 25px 50px rgba(0,0,0,.2)}.drop-shadow-sm{filter:drop-shadow(0 1px 1px rgba(0,0,0,.05))}
+.opacity-40{opacity:.4}.opacity-60{opacity:.6}.z-10{z-index:10}.z-20{z-index:20}.z-50{z-index:50}
+.backdrop-blur-sm{backdrop-filter:blur(4px)}.transition{transition:all .15s ease}
+.transition-all{transition:all .3s ease}.transition-colors{transition:background-color .5s,color .5s}
+.duration-300{transition-duration:.3s}.delay-100{animation-delay:.1s}.delay-200{animation-delay:.2s}
+.hover\:text-white:hover{color:#fff}.hover\:text-gray-700:hover{color:#374151}
+.hover\:bg-black\/25:hover{background:rgba(0,0,0,.25)}.hover\:decoration-white:hover{text-decoration-color:#fff}
+.animate-pulse{animation:localPulse 1.5s ease-in-out infinite}.animate-bounce{animation:localBounce 1s infinite}
+.animate-fadeIn{animation:localFadeIn .25s ease-out both}
+@keyframes localPulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes localBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes localFadeIn{from{opacity:0}to{opacity:1}}
+.aspect-\[600\/460\]{aspect-ratio:600/460}
+.w-\[62\%\]{width:62%}.w-\[54\%\]{width:54%}.w-\[46\%\]{width:46%}.w-\[38\%\]{width:38%}
+.top-\[52\%\]{top:52%}
+@media (min-width:640px){
+  .sm\:pt-12{padding-top:3rem}.sm\:mt-2{margin-top:.5rem}.sm\:mt-4{margin-top:1rem}
+  .sm\:p-8{padding:2rem}.sm\:py-2{padding-top:.5rem;padding-bottom:.5rem}
+  .sm\:py-3{padding-top:.75rem;padding-bottom:.75rem}.sm\:py-6{padding-top:1.5rem;padding-bottom:1.5rem}
+  .sm\:text-2xl{font-size:1.5rem;line-height:2rem}.sm\:text-7xl{font-size:4.5rem;line-height:1}
+  .sm\:text-sm{font-size:.875rem;line-height:1.25rem}.sm\:text-xs{font-size:.75rem;line-height:1rem}
+  .sm\:w-8{width:2rem}.sm\:w-\[38\%\]{width:38%}.sm\:w-\[54\%\]{width:54%}
+}
+@media (min-width:768px){.md\:text-8xl{font-size:6rem;line-height:1}}
+
+body{margin:0}
+button,input{font:inherit}
+button{border:0}
+
+.memelogo
+{
+  height: 130px;
+  align-self: center;
+}
+/* =========================================
+   AUTH INPUT PANEL
+   ========================================= */
+
+.auth-panel {
+  position: absolute;
+
+  /* Position inside the bull */
+  top: 73%;
+  left: 50%;
+
+  transform: translate(-50%, -50%);
+
+  width: 49.5%;
+  height: 35.5%;
+
+  z-index: 10;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #ffffff;
+
+  border: 4.5px solid var(--bull-dark);
+
+  border-radius: 14px;
+
+  overflow: hidden;
+
+  box-sizing: border-box;
+
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
+}
+
+
+.auth-main {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 20px;
+  background-color: transparent;
+  align-items: center;
+
+  padding-left: 1rem;
+  padding-right: 1rem;
+
+  overflow: hidden;
+}
+
+
+.bull-container {
+  position: relative;
+
+  width: 100%;
+  max-width: 620px;
+  margin-top: -220px;
+
+  height: 20rem;
+
+
+  aspect-ratio: 600 / 460;
+}
+
+
+/* =========================================
+   FORM
+   ========================================= */
+
+.auth-form {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
+
+  background: #ffffff;
+}
+
+
+/* =========================================
+   INPUT FIELD
+   ========================================= */
+
+.auth-field {
+  position: relative;
+
+  width: 100%;
+
+  background: #ffffff;
+
+  border-bottom: 1px solid #e5e7eb;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+
+/* Remove border from last field */
+.auth-field:last-child {
+  border-bottom: none;
+}
+
+
+/* =========================================
+   INPUT
+   ========================================= */
+
+.auth-input {
+  width: 100%;
+
+  height: 48px;
+
+  padding: 0 14px;
+
+  border: none;
+  outline: none;
+
+  background: #ffffff;
+
+  color: #1f2937;
+
+  font-family: inherit;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  letter-spacing: 0.025em;
+
+  box-sizing: border-box;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+
+/* Placeholder */
+.auth-input::placeholder {
+  color: #9ca3af;
+
+  opacity: 1;
+
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+
+/* Focus */
+.auth-input:focus {
+  background: #fafafa;
+}
+
+
+/* Placeholder disappears slightly when focused */
+.auth-input:focus::placeholder {
+  color: #c4c8ce;
+}
+
+
+/* Disabled */
+.auth-input:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.65;
+}
+
+
+/* =========================================
+   PASSWORD FIELD
+   ========================================= */
+
+.auth-password-field {
+  display: flex;
+  align-items: center;
+}
+
+
+.auth-password-input {
+  padding-right: 42px;
+}
+
+
+/* =========================================
+   PASSWORD TOGGLE
+   ========================================= */
+
+.password-toggle {
+  position: absolute;
+
+  right: 8px;
+  top: 50%;
+
+  transform: translateY(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+
+  padding: 0;
+
+  border: none;
+
+  background: transparent;
+
+  color: #9ca3af;
+
+  cursor: pointer;
+
+  border-radius: 7px;
+
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+
+.password-toggle:hover {
+  color: #374151;
+
+  background: #f3f4f6;
+}
+
+
+.password-toggle:active {
+  transform: translateY(-50%) scale(0.92);
+}
+
+
+.password-icon {
+  width: 17px;
+  height: 17px;
+}
+
+
+/* =========================================
+   CONFIRM PASSWORD
+   ========================================= */
+
+.auth-confirm-field {
+  border-top: 1px solid #e5e7eb;
+
+  border-bottom: none;
+}
+
+
+/* =========================================
+   ERROR MESSAGE
+   ========================================= */
+
+.auth-error {
+  position: absolute;
+
+  left: 50%;
+
+  top: 52%;
+
+  transform: translateX(-50%);
+
+  z-index: 20;
+
+  max-width: 90%;
+
+  padding: 5px 12px;
+
+  background: #991b1b;
+
+  color: #ffffff;
+
+  font-size: 11px;
+
+  font-weight: 600;
+
+  border: 1px solid #ef4444;
+
+  border-radius: 7px;
+
+  white-space: nowrap;
+
+  box-shadow:
+    0 6px 15px rgba(0, 0, 0, 0.18);
+
+  animation: auth-error-bounce 0.8s ease;
+}
+
+
+/* =========================================
+   ERROR ANIMATION
+   ========================================= */
+
+@keyframes auth-error-bounce {
+  0% {
+    transform: translateX(-50%) translateY(-10px);
+    opacity: 0;
+  }
+
+  50% {
+    transform: translateX(-50%) translateY(3px);
+    opacity: 1;
+  }
+
+  70% {
+    transform: translateX(-50%) translateY(-2px);
+  }
+
+  100% {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+
+/* =========================================
+   RESPONSIVE
+   ========================================= */
+
+@media (max-width: 640px) {
+  .auth-panel {
+    width: 49.5%;
+
+    height: 35.5%;
+
+    border-width: 3.5px;
+
+    border-radius: 10px;
+  }
+
+  .auth-input {
+    height: 38px;
+
+    padding: 0 10px;
+
+    font-size: 11px;
+  }
+
+  .auth-password-input {
+    padding-right: 34px;
+  }
+
+  .password-toggle {
+    right: 4px;
+
+    width: 27px;
+    height: 27px;
+  }
+
+  .password-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .auth-error {
+    font-size: 9px;
+
+    padding: 4px 8px;
+  }
+}
+
+
+/* =========================================
+   VERY SMALL SCREENS
+   ========================================= */
+
+@media (max-width: 400px) {
+  .auth-panel {
+    border-width: 3px;
+
+    border-radius: 8px;
+  }
+
+  .auth-input {
+    height: 32px;
+
+    padding: 0 8px;
+
+    font-size: 9px;
+  }
+
+  .auth-password-input {
+    padding-right: 30px;
+  }
+
+  .password-toggle {
+    width: 24px;
+    height: 24px;
+  }
+
+  .password-icon {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+
+.bull-nose {
+  transform: translateY(-35px);
+}
+
+/* =========================================
+   BULL ARMS
+   ========================================= */
+
+.bull-arm {
+  fill: none;
+  stroke: var(--bull-dark);
+
+  stroke-width: 11px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  transition:
+    stroke 0.45s ease,
+    stroke-width 0.25s ease,
+    transform 0.25s ease;
+}
+
+
+.bull-arm-left {
+  transform: translateY(30px);
+}
+
+.bull-arm-right {
+  transform: translateY(30px);
+}
+
+/* =========================================
+   ARM STATE EFFECT
+   ========================================= */
+
+.theme-orange .bull-arm {
+  stroke: var(--bull-dark);
+}
+
+.theme-red .bull-arm {
+  stroke: var(--bull-dark);
+}
+
+.theme-success .bull-arm {
+  stroke: var(--bull-dark);
+}
+
+
+/* =========================================
+   OPTIONAL: SLIGHTLY THICKER ARMS ON HOVER
+   ========================================= */
+
+.bull-svg:hover .bull-arm {
+  stroke-width: 12px;
+}
+
+.auth-button-position {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 51%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+
+  top: 95.5%;
+}
