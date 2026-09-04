@@ -9,8 +9,31 @@ import  {
 import { QUERY_KEYS } from "./queryKeys";
 import { appwriteConfig, databases } from "../appwrite/config";
 import { ID, Query } from "appwrite";
-import { checkIsFollowing, createPost,  createUserAccount,  deletePost, deleteSavedPost, followUser, getAdminAnalytics, getCurrentUser, getExplorePosts, getFollowersCount, getFollowing, getFollowingCount, getInfinitePosts, getNewFollowers, getNotifications, getPostById, getRecentPosts, getSavedPosts, getUserAnalytics, getUserById, getUsers, likePost, savePost, searchPosts, searchUsers, signInAccount, signInWithGoogle, signOutAccount, unfollowUser, updatePost, updateUser } from "../appwrite/api";
+import { checkIsFollowing, completeEmailSignup, createPost,  createUserAccount,  deletePost, deleteSavedPost, followUser, getAdminAnalytics, getCurrentUser, getExplorePosts, getFollowersCount, getFollowing, getFollowingCount, getInfinitePosts, getNewFollowers, getNotifications, getPostById, getRecentPosts, getSavedPosts, getUserAnalytics, getUserById, getUsers, likePost, savePost, searchPosts, searchUsers, sendEmailOTP, signInAccount, signInWithGoogle, signOutAccount, unfollowUser, updatePost, updateUser, verifyEmailOTP } from "../appwrite/api";
 import { safeTrendingScore } from "../utils";
+
+export const useSendEmailOTP = () => {
+  return useMutation({
+    mutationFn: (email: string) => sendEmailOTP(email),
+  });
+};
+
+export const useVerifyEmailOTP = () => {
+  return useMutation({
+    mutationFn: (data: { userId: string; secret: string }) =>
+      verifyEmailOTP(data),
+  });
+};
+
+export const useCompleteEmailSignup = () => {
+  return useMutation({
+    mutationFn: (data: {
+      name: string;
+      username: string;
+      password: string;
+    }) => completeEmailSignup(data),
+  });
+};
 
 export const useSignInAccount = () => {
   return useMutation({

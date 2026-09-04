@@ -17,6 +17,134 @@ import { useQuery } from '@tanstack/react-query';
 import { safeTrendingScore } from '../utils';
 
 
+/* =========================================================
+   EMAIL OTP SIGNUP FLOW
+========================================================= */
+
+export async function sendEmailOTP(email: string) {
+  try {
+    const cleanEmail = email.trim().toLowerCase();
+
+    const token = await account.createEmailToken(
+      ID.unique(),
+      cleanEmail
+    );
+
+    if (!token?.userId) {
+      throw new Error("Failed to create verification token");
+    }
+
+    return token; // { userId, expire, phrase }
+  } catch (error: any) {
+    console.error("SEND EMAIL OTP ERROR:", error);
+
+    if (error?.code === 409) {
+      throw new Error("An account with this email already exists");
+    }
+
+    throw new Error(
+      error?.message || "Unable to send verification code"
+    );
+  }
+}
+
+export async function verifyEmailOTP({
+  userId,
+  secret,
+}: {
+  userId: string;
+  secret: string;
+}) {
+  try {
+    const session = await account.createSession(userId, secret);
+
+    if (!session) {
+      throw new Error("Verification failed");
+    }
+
+    return session;
+  } catch (error: any) {
+    console.error("VERIFY EMAIL OTP ERROR:", error);
+
+    throw new Error(
+      error?.message || "Invalid or expired verification code"
+    );
+  }
+}
+
+export async function completeEmailSignup({
+  name,
+  username,
+  password,
+}: {
+  name: string;
+  username: string;
+  password: string;
+}) {
+  try {
+    // Requires an active session — created in verifyEmailOTP above
+    const current = await account.get();
+
+    if (!current) {
+      throw new Error(
+        "Your session expired. Please verify your email again."
+      );
+    }
+
+    const reserved = [
+      "memeflix",
+      "memeflixx",
+      "memeflixxx",
+      "memefliix",
+      "memefliixx",
+      "memefl1x",
+      "memefl1xx",
+    ];
+
+    const cleanUsername = username.trim().toLowerCase();
+    const cleanName = name.trim();
+
+    if (reserved.includes(cleanUsername)) {
+      throw new Error("That username is reserved");
+    }
+
+    const existing = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      [Query.equal("username", cleanUsername), Query.limit(1)]
+    );
+
+    if (existing.documents.length > 0) {
+      throw new Error("That username is already taken");
+    }
+
+    await account.updateName(cleanName);
+    await account.updatePassword(password);
+
+    const avatarUrl = avatars.getInitials(cleanName);
+
+    const newUser = await saveUserToDB({
+      accountId: current.$id,
+      email: current.email,
+      name: cleanName,
+      imageUrl: avatarUrl.toString(),
+      username: cleanUsername,
+    });
+
+    if (!newUser) {
+      throw new Error("Failed to save your profile");
+    }
+
+    return newUser;
+  } catch (error: any) {
+    console.error("COMPLETE EMAIL SIGNUP ERROR:", error);
+
+    throw new Error(
+      error?.message ||
+        "Something went wrong while creating your account"
+    );
+  }
+}
 
 /* =========================================================
    SAVE USER TO DATABASE
