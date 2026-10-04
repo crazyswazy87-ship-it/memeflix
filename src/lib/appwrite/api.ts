@@ -452,20 +452,27 @@ export async function uploadFile(file?: File) {
   }
 }
 
-export  function getFilePreview(fileId: string) {
+export function getFilePreview(
+  fileId: string,
+  width = 1600,
+  height = 1600,
+  quality = 85
+) {
   try {
-    const fileUrl = storage.getFileView(
-      appwriteConfig.storageId,
-      fileId)
-      //1000,   // smaller width
-      //1000,   // smaller height
-      //'top',
-      //100     // lower quality = shorter UR
-    //)
-
-    return fileUrl;
+    // Serve a transformed WebP instead of the original upload.
+    // Appwrite caches transformed previews and delivers them through its CDN.
+    return storage.getFilePreview({
+      bucketId: appwriteConfig.storageId,
+      fileId,
+      width,
+      height,
+      gravity: "center",
+      quality,
+      output: "webp",
+    });
   } catch (error) {
-    console.log(error)
+    console.log(error);
+    return null;
   }
 } 
 
