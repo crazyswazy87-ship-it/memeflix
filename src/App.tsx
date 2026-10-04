@@ -41,7 +41,7 @@ const SusHistory = lazy(() => import('./_root/pages/AccountSusHistory'))
 const Sus = lazy(() => import('./_root/pages/AccountSuspension'))
 const PageNotFound = lazy(() => import('./_root/pages/PageNotFound'))
 const SesionEnd = lazy(() => import('./_root/pages/AccountSession'))
-const Denzel = lazy(() => import('./_Binn/Denzel'))
+const Denzel = lazy(() => import('./_Binn/Bin/AdminPanel.tsx'))
 
 function RouteLoader() {
   return (
