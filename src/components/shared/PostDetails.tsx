@@ -65,8 +65,12 @@ const PostDetails = ({ post }: PostDetailsProps) => {
   const handleReport = async () => {
     if (!reason) return;
 
+    if (!user?.id) throw new Error("You must be signed in to report this meme");
+
     await reportPost({
       postId: post.$id,
+      userId: user.id,
+      creatorId: post.creator.$id,
       reason,
       details,
     });
