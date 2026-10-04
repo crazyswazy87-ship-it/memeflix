@@ -46,6 +46,8 @@ import {
   getNotificationsFast,
   getFollowersCountFast,
   getFollowingCountFast,
+  followUserFast,
+  unfollowUserFast,
 } from "../appwrite/fastApi";
 import { safeTrendingScore } from "../utils";
 
@@ -424,7 +426,7 @@ export const useGetUserAnalytics = (userId: string) => useQuery({
 export const useFollowUser = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ followerId, followingId }: { followerId: string; followingId: string }) => followUser(followerId, followingId),
+    mutationFn: ({ followerId, followingId }: { followerId: string; followingId: string }) => followUserFast(followerId, followingId),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_FOLLOWERS, variables.followingId] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_FOLLOWING, variables.followerId] });
@@ -436,7 +438,7 @@ export const useFollowUser = () => {
 export const useUnfollowUser = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ followerId, followingId }: { followerId: string; followingId: string }) => unfollowUser(followerId, followingId),
+    mutationFn: ({ followerId, followingId }: { followerId: string; followingId: string }) => unfollowUserFast(followerId, followingId),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_FOLLOWERS, variables.followingId] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_FOLLOWING, variables.followerId] });
