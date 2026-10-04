@@ -1292,28 +1292,35 @@ export async function getAdminAnalytics() {
       console.warn("platform_stats unavailable; using legacy analytics fallback.");
     }
 
-    const [postsRes, usersRes, followsRes] = await Promise.all([
-      databases.listDocuments(
-        appwriteConfig.databaseId,
-        appwriteConfig.postCollectionId,
-        [Query.limit(1000), Query.select(["$id", "$createdAt", "likesCount", "savesCount", "repostCount", "topScore"])]
-      ),
-      databases.listDocuments(
-        appwriteConfig.databaseId,
-        appwriteConfig.userCollectionId,
-        [Query.limit(1), Query.select(["$id"])]
-      ),
-      databases.listDocuments(
-        appwriteConfig.databaseId,
-        "follows",
-        [Query.limit(1), Query.select(["$id"])]
-      ),
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const [
+      usersRes,
+      postsRes,
+      followsRes,
+      likesRes,
+      savesRes,
+      repostsRes,
+      recentPostsRes,
+      topPostsRes,
+    ] = await Promise.all([
+      databases.listDocuments(appwriteConfig.databaseId, appwriteConfig.userCollectionId, [Query.limit(1), Query.select(["$id"])]),
+      databases.listDocuments(appwriteConfig.databaseId, appwriteConfig.postCollectionId, [Query.limit(1), Query.select(["$id"])]),
+      databases.listDocuments(appwriteConfig.databaseId, appwriteConfig.followsCollectionId, [Query.limit(1), Query.select(["$id"])]),
+      databases.listDocuments(appwriteConfig.databaseId, appwriteConfig.likesCollectionId, [Query.limit(1), Query.select(["$id"])]),
+      databases.listDocuments(appwriteConfig.databaseId, appwriteConfig.savesCollectionId, [Query.limit(1), Query.select(["$id"])]),
+      databases.listDocuments(appwriteConfig.databaseId, appwriteConfig.postCollectionId, [Query.equal("isRepost", true), Query.limit(1), Query.select(["$id"])]),
+      databases.listDocuments(appwriteConfig.databaseId, appwriteConfig.postCollectionId, [Query.greaterThanEqual("$createdAt", weekAgo), Query.limit(1), Query.select(["$id"])]),
+      databases.listDocuments(appwriteConfig.databaseId, appwriteConfig.postCollectionId, [
+        Query.orderDesc("topScore"),
+        Query.limit(10),
+        Query.select(["$id", "$createdAt", "caption", "imageUrl", "previewUrl", "imageId", "originalPostId", "isRepost", "likesCount", "savesCount", "repostCount", "topScore", "trendingScore", "creator.$id", "creator.name", "creator.username", "creator.imageUrl", "creator.isVerified"]),
+      ]),
     ]);
 
-    const posts = postsRes.documents;
-    const totalLikes = posts.reduce((sum, p) => sum + (p.likesCount || 0), 0);
-    const totalSaves = posts.reduce((sum, p) => sum + (p.savesCount || 0), 0);
-    const totalReposts = posts.reduce((sum, p) => sum + (p.repostCount || 0), 0);
+    const totalLikes = likesRes.total;
+    const totalSaves = savesRes.total;
+    const totalReposts = repostsRes.total;
 
     return {
       users: usersRes.total,
@@ -1323,14 +1330,10 @@ export async function getAdminAnalytics() {
       totalSaves,
       totalReposts,
       totalEngagement: totalLikes + totalSaves + totalReposts,
-      topPosts: [...posts]
-        .sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0))
-        .slice(0, 10),
-      recentPostsCount: posts.filter((p) =>
-        Date.now() - new Date(p.$createdAt).getTime() < 7 * 24 * 60 * 60 * 1000
-      ).length,
+      topPosts: topPostsRes.documents,
+      recentPostsCount: recentPostsRes.total,
       rawPosts: [],
-    };
+    };;
   } catch (err) {
     console.error("Admin analytics error:", err);
     return null;
