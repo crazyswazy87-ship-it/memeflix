@@ -59,12 +59,12 @@ const Notifications = () => {
 
   const handleNotificationClick = async (n: any) => {
     const postId =
-    typeof n.post === "object"
-      ? n.post?.$id
-      : n.post || null;
-    if (!postId) return;
+      typeof n.post === "object"
+        ? n.post?.$id
+        : n.post || null;
 
-    // ✅ optimistic update
+    // Marking a notification as read does not need a full-list refetch.
+    // Keep both notification caches in sync locally after the write.
     queryClient.setQueryData(
       ["GET_NOTIFICATIONS", currentUser.$id],
       (old: any) => {
@@ -79,20 +79,32 @@ const Notifications = () => {
       }
     );
 
-    try {
-     await databases.updateDocument(
-      appwriteConfig.databaseId,
-      "notifications",
-      n.$id,
-      { isRead: true }
-    );
+    if (!n.isRead) {
+      queryClient.setQueryData(
+        ["NOTIFICATION_COUNTS", currentUser.$id],
+        (old: Record<string, number> | undefined) => {
+          if (!old || !n.type || old[n.type] === undefined) return old;
 
-    queryClient.invalidateQueries(["GET_NOTIFICATIONS", currentUser.$id]);
+          return {
+            ...old,
+            [n.type]: Math.max(0, old[n.type] - 1),
+          };
+        }
+      );
+    }
+
+    try {
+      await databases.updateDocument(
+        appwriteConfig.databaseId,
+        "notifications",
+        n.$id,
+        { isRead: true }
+      );
     } catch (err) {
       console.error("Failed to update notification:", err);
     }
 
-    setSelectedPostId(postId);
+    if (postId) setSelectedPostId(postId);
   };
 
   return (
