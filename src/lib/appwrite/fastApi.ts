@@ -96,6 +96,22 @@ export async function getPostByIdFast(postId: string) {
   );
 }
 
+function calculatePostScores(post: any) {
+  const likes = Number(post.likesCount ?? 0);
+  const saves = Number(post.savesCount ?? 0);
+  const reposts = Number(post.repostCount ?? 0);
+  const createdAt = new Date(post.$createdAt).getTime();
+  const hoursSincePost = createdAt
+    ? Math.max((Date.now() - createdAt) / 3600000, 1)
+    : 1;
+  const topScore = likes * 2 + saves * 5 + reposts * 3;
+  const timeDecay = Math.exp(-hoursSincePost / 24);
+  const velocity = (likes + saves + reposts) / hoursSincePost;
+  const trendingScore = Math.round(topScore * timeDecay * (1 + velocity));
+
+  return { topScore, trendingScore };
+}
+
 export async function likePostFast({ postId, userId, emoji }: {
   postId: string;
   userId: string;
@@ -108,22 +124,24 @@ export async function likePostFast({ postId, userId, emoji }: {
   );
 
   if (existing.documents.length > 0) {
-    return databases.updateDocument(
+    const like = await databases.updateDocument(
       appwriteConfig.databaseId,
       appwriteConfig.likesCollectionId,
       existing.documents[0].$id,
       { emoji }
     );
+
+    return { action: "changed" as const, like };
   }
 
-  const result = await databases.createDocument(
+  const like = await databases.createDocument(
     appwriteConfig.databaseId,
     appwriteConfig.likesCollectionId,
     ID.unique(),
     { user: userId, post: postId, emoji }
   );
 
-  await databases.incrementDocumentAttribute(
+  const post = await databases.incrementDocumentAttribute(
     appwriteConfig.databaseId,
     appwriteConfig.postCollectionId,
     postId,
@@ -131,7 +149,20 @@ export async function likePostFast({ postId, userId, emoji }: {
     1
   );
 
-  return result;
+  const scores = calculatePostScores(post);
+  await databases.updateDocument(
+    appwriteConfig.databaseId,
+    appwriteConfig.postCollectionId,
+    postId,
+    scores
+  );
+
+  return {
+    action: "created" as const,
+    like,
+    likesCount: post.likesCount ?? 1,
+    ...scores,
+  };
 }
 
 export async function savePostFast(postId: string, userId: string) {
@@ -143,7 +174,7 @@ export async function savePostFast(postId: string, userId: string) {
       { user: userId, post: postId }
     );
 
-    await databases.incrementDocumentAttribute(
+    const post = await databases.incrementDocumentAttribute(
       appwriteConfig.databaseId,
       appwriteConfig.postCollectionId,
       postId,
@@ -151,7 +182,15 @@ export async function savePostFast(postId: string, userId: string) {
       1
     );
 
-    return saved;
+    const scores = calculatePostScores(post);
+    await databases.updateDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.postCollectionId,
+      postId,
+      scores
+    );
+
+    return { saved, savesCount: post.savesCount ?? 1, ...scores };
   } catch (error: any) {
     if (error?.code === 409) return null;
     throw error;
@@ -165,7 +204,7 @@ export async function deleteSavedPostFast(savedRecordId: string, postId: string)
     savedRecordId
   );
 
-  await databases.decrementDocumentAttribute(
+  const post = await databases.decrementDocumentAttribute(
     appwriteConfig.databaseId,
     appwriteConfig.postCollectionId,
     postId,
@@ -173,7 +212,15 @@ export async function deleteSavedPostFast(savedRecordId: string, postId: string)
     1
   );
 
-  return true;
+  const scores = calculatePostScores(post);
+  await databases.updateDocument(
+    appwriteConfig.databaseId,
+    appwriteConfig.postCollectionId,
+    postId,
+    scores
+  );
+
+  return { savesCount: Math.max(0, post.savesCount ?? 0), ...scores };
 }
 
 export async function searchPostsFast(searchTerm: string) {
