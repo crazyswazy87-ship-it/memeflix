@@ -3,6 +3,30 @@ import { ID, Query } from "appwrite";
 import { appwriteConfig, databases } from "./config";
 import { createNotification } from "./api";
 
+async function getCachedFeed(mode: "latest" | "top" | "trending", limit: number, cursor?: string | null) {
+  const base = appwriteConfig.cacheFunctionUrl;
+  if (!base) return null;
+
+  try {
+    const url = new URL(base);
+    url.searchParams.set("resource", "feed");
+    url.searchParams.set("mode", mode);
+    url.searchParams.set("limit", String(limit));
+    if (cursor) url.searchParams.set("cursor", cursor);
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    // Redis/cache failure must never take Memeflix down.
+    return null;
+  }
+}
+
 const postSelect = [
   "*",
   "creator.$id",
@@ -13,6 +37,9 @@ const postSelect = [
 ];
 
 export async function getRecentPostsFast() {
+  const cached = await getCachedFeed("latest", 20);
+  if (cached?.documents) return cached;
+
   return databases.listDocuments(
     appwriteConfig.databaseId,
     appwriteConfig.postCollectionId,
@@ -21,6 +48,9 @@ export async function getRecentPostsFast() {
 }
 
 export async function getInfinitePostsFast({ pageParam }: { pageParam?: string | null }) {
+  const cached = await getCachedFeed("latest", 20, pageParam);
+  if (cached?.documents) return cached;
+
   const queries = [Query.limit(20), Query.orderDesc("$createdAt"), Query.select(postSelect)];
   if (pageParam) queries.push(Query.cursorAfter(pageParam));
   return databases.listDocuments(appwriteConfig.databaseId, appwriteConfig.postCollectionId, queries);
@@ -33,6 +63,9 @@ export async function getExplorePostsFast({
   pageParam?: string | null;
   mode?: "top" | "trending";
 }) {
+  const cached = await getCachedFeed(mode, 10, pageParam);
+  if (cached?.documents) return cached;
+
   const queries = [
     Query.limit(10),
     Query.select(postSelect),
