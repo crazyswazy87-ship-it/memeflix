@@ -455,9 +455,9 @@ export async function uploadFile(file?: File) {
 
 export function getFilePreview(
   fileId: string,
-  width = 1600,
-  height = 1600,
-  quality = 85
+  width = 1200,
+  height = 1200,
+  quality = 78
 ) {
   try {
     // Serve a transformed WebP instead of the original upload.
