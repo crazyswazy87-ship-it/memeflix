@@ -388,8 +388,8 @@ export const useGetNotifications = (userId: string) => useQuery({
   queryFn: () => getNotificationsFast(userId),
   enabled: !!userId,
   refetchOnWindowFocus: false,
-  refetchInterval: 30000,
-  staleTime: 10000,
+  staleTime: 30000,
+  refetchOnReconnect: true,
 });
 
 export const useNotificationCounts = (userId: string) => useQuery({
@@ -406,8 +406,8 @@ export const useNotificationCounts = (userId: string) => useQuery({
   },
   enabled: !!userId,
   refetchOnWindowFocus: false,
-  refetchInterval: 30000,
-  staleTime: 10000,
+  staleTime: 30000,
+  refetchOnReconnect: true,
 });
 
 export async function markNotificationAsRead(id: string) {
