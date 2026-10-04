@@ -203,6 +203,14 @@ export async function likePostFast({ postId, userId, emoji }: {
     scores
   );
 
+  await createPostNotificationFast(
+    "like",
+    typeof post.creator === "string" ? post.creator : post.creator?.$id,
+    userId,
+    postId,
+    emoji
+  );
+
   return {
     action: "created" as const,
     like,
@@ -234,6 +242,13 @@ export async function savePostFast(postId: string, userId: string) {
       appwriteConfig.postCollectionId,
       postId,
       scores
+    );
+
+    await createPostNotificationFast(
+      "save",
+      typeof post.creator === "string" ? post.creator : post.creator?.$id,
+      userId,
+      postId
     );
 
     return { saved, savedRecordId: saved.$id, savesCount: post.savesCount ?? 1, ...scores };
@@ -368,6 +383,44 @@ export async function getNotesFast() {
   );
 }
 
+
+async function createPostNotificationFast(
+  type: "like" | "save",
+  receiver: string,
+  sender: string,
+  postId: string,
+  emoji?: string
+) {
+  if (!receiver || receiver === sender) return null;
+
+  const existing = await databases.listDocuments(
+    appwriteConfig.databaseId,
+    "notifications",
+    [
+      Query.equal("type", type),
+      Query.equal("sender", sender),
+      Query.equal("receiver", receiver),
+      Query.equal("post", postId),
+      Query.limit(1),
+    ]
+  );
+
+  if (existing.documents.length > 0) return null;
+
+  return databases.createDocument(
+    appwriteConfig.databaseId,
+    "notifications",
+    ID.unique(),
+    {
+      type,
+      receiver,
+      sender,
+      post: postId,
+      emoji: emoji ?? null,
+      isRead: false,
+    }
+  );
+}
 
 async function createFollowNotificationFast(receiver: string, sender: string) {
   if (receiver === sender) return null;
