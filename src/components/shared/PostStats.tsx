@@ -1,6 +1,7 @@
 import {
   useDeleteSavedPost,
   useGetCurrentUser,
+  useGetSavedPost,
   useLikePost,
   useSavePost,
 } from "@/lib/react-query/queriesAndMutations";
@@ -14,14 +15,12 @@ import {
 
 
 import { formatCount, formatCountRepost } from "@/lib/utils";
-import type { Post, Save } from "@/types";
+import type { Post } from "@/types";
 
 import { useEffect, useState } from "react";
 import EmojiNdechu from "./EmojiNdechu";
 
 import { motion, AnimatePresence } from "framer-motion";
-
-import { getLikes } from "@/lib/appwrite/api";
 
 import { Link, useNavigate } from "react-router-dom";
 
@@ -61,9 +60,7 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
   // LIKE STATE
   // ==============================
 
-  const [likesCount, setLikesCount] = useState(0);
-  const [postLikes, setPostLikes] = useState<any[]>([]);
-  const [emojiMap, setEmojiMap] = useState<Record<string, number>>({});
+  const [likesCount, setLikesCount] = useState(post?.likesCount || 0);
 
   const [burstEmoji, setBurstEmoji] =
     useState<React.ReactNode | null>(null);
@@ -119,86 +116,31 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
   } = useDeleteSavedPost();
 
 
-  // ==============================
-  // FETCH LIKES
-  // ==============================
-
+  // The feed already carries the aggregate counter. Do not fetch every
+  // like document for every PostStats instance (N+1 requests).
   useEffect(() => {
-
-    const fetchLikes = async () => {
-
-      if (!post?.$id) return;
-
-      try {
-
-        const res = await getLikes(post.$id);
-
-        const docs = res.documents;
-
-        setPostLikes(docs);
-        setLikesCount(docs.length);
-
-
-        const map: Record<string, number> = {};
-
-        docs.forEach((like: any) => {
-
-          if (like.emoji) {
-
-            map[like.emoji] =
-              (map[like.emoji] || 0) + 1;
-
-          }
-
-        });
-
-        setEmojiMap(map);
-
-      } catch (error) {
-
-        console.error(
-          "Failed to fetch likes:",
-          error
-        );
-
-      }
-
-    };
-
-    fetchLikes();
-
-  }, [post?.$id]);
-
+    setLikesCount(post?.likesCount || 0);
+  }, [post?.likesCount]);
 
   // ==============================
   // SAVE STATE
   // ==============================
 
+  const { data: savedPosts } = useGetSavedPost(
+    currentUser?.$id || ""
+  );
+
   useEffect(() => {
+    if (!post?.$id || !savedPosts?.documents) return;
 
-    if (!currentUser || !post?.$id) return;
-
-    const record = currentUser.save?.find(
-      (r: Save) =>
-        r.post?.$id === post.$id
+    const record = savedPosts.documents.find(
+      (item: any) =>
+        (typeof item.post === "string" ? item.post : item.post?.$id) === post.$id
     );
 
-    if (record) {
-
-      setIsSaved(true);
-      setSavedRecordId(record.$id);
-
-    } else {
-
-      setIsSaved(false);
-      setSavedRecordId(null);
-
-    }
-
-  }, [
-    currentUser,
-    post?.$id,
-  ]);
+    setIsSaved(!!record);
+    setSavedRecordId(record?.$id ?? null);
+  }, [post?.$id, savedPosts]);
 
 
   // ==============================
@@ -243,108 +185,20 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
     }, 2000);
 
 
-    const existingReaction =
-      postLikes.find(
-        (like) =>
-          like.user === currentUser.$id
-      );
-
-
-    let updatedLikes = [...postLikes];
-
-    const updatedEmojiMap = {
-      ...emojiMap,
-    };
-
-    let updatedCount = likesCount;
-
-
-    // ==============================
-    // REMOVE / CHANGE REACTION
-    // ==============================
-
-    if (existingReaction) {
-
-      if (
-        existingReaction.emoji ===
-        item.value
-      ) {
-
-        updatedLikes =
-          updatedLikes.filter(
-            (like) =>
-              like.user !== currentUser.$id
-          );
-
-        updatedCount =
-          Math.max(updatedCount - 1, 0);
-
-        updatedEmojiMap[item.value] =
-          Math.max(
-            (updatedEmojiMap[item.value] || 1) - 1,
-            0
-          );
-
-      } else {
-
-        updatedLikes =
-          updatedLikes.map((like) =>
-            like.user === currentUser.$id
-              ? {
-                  ...like,
-                  emoji: item.value,
-                }
-              : like
-          );
-
-
-        updatedEmojiMap[
-          existingReaction.emoji
-        ] =
-          Math.max(
-            (updatedEmojiMap[
-              existingReaction.emoji
-            ] || 1) - 1,
-            0
-          );
-
-
-        updatedEmojiMap[item.value] =
-          (updatedEmojiMap[item.value] || 0) + 1;
-
-      }
-
-    }
-
-    // ==============================
-    // NEW LIKE
-    // ==============================
-
-    else {
-
-      updatedLikes.push({
-        user: currentUser.$id,
+    likePost(
+      {
+        postId: post.$id,
+        userId: currentUser.$id,
         emoji: item.value,
-      });
-
-      updatedCount++;
-
-      updatedEmojiMap[item.value] =
-        (updatedEmojiMap[item.value] || 0) + 1;
-
-    }
-
-
-    setPostLikes(updatedLikes);
-    setLikesCount(updatedCount);
-    setEmojiMap(updatedEmojiMap);
-
-
-    likePost({
-      postId: post.$id,
-      userId: currentUser.$id,
-      emoji: item.value,
-    });
+      },
+      {
+        onSuccess: (data) => {
+          if (typeof data?.likesCount === "number") {
+            setLikesCount(data.likesCount);
+          }
+        },
+      }
+    );
 
   };
 
