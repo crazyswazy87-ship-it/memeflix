@@ -124,10 +124,43 @@ export async function likePostFast({ postId, userId, emoji }: {
   );
 
   if (existing.documents.length > 0) {
+    const current = existing.documents[0];
+
+    if (current.emoji === emoji) {
+      await databases.deleteDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.likesCollectionId,
+        current.$id
+      );
+
+      const post = await databases.decrementDocumentAttribute(
+        appwriteConfig.databaseId,
+        appwriteConfig.postCollectionId,
+        postId,
+        "likesCount",
+        1,
+        0
+      );
+
+      const scores = calculatePostScores(post);
+      await databases.updateDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.postCollectionId,
+        postId,
+        scores
+      );
+
+      return {
+        action: "removed" as const,
+        likesCount: Math.max(0, post.likesCount ?? 0),
+        ...scores,
+      };
+    }
+
     const like = await databases.updateDocument(
       appwriteConfig.databaseId,
       appwriteConfig.likesCollectionId,
-      existing.documents[0].$id,
+      current.$id,
       { emoji }
     );
 
