@@ -1,17 +1,13 @@
 import { ID, Query } from "appwrite";
 
-import {
-  appwriteConfig,
-  databases,
-} from "./config";
-import { getFilePreview, uploadFile, deleteFile, createNotification } from "./api";
+import { appwriteConfig, databases } from "./config";
 
 /**
  * Performance-first database paths.
  *
  * Rules:
  * - Never scan a child collection just to calculate a stored counter.
- * - Use the counter already stored on the post document.
+ * - Use counters already stored on post documents.
  * - Use Appwrite atomic numeric operations for counters.
  * - Keep feed payloads small and paginated.
  */
@@ -113,27 +109,17 @@ export async function likePostFast({
   );
 
   let result;
-  let isNewLike = false;
+  const isNewLike = existing.documents.length === 0;
 
-  if (existing.documents.length > 0) {
-    result = await databases.updateDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.likesCollectionId,
-      existing.documents[0].$id,
-      { emoji }
-    );
-  } else {
-    isNewLike = true;
+  if (isNewLike) {
     result = await databases.createDocument(
       appwriteConfig.databaseId,
       appwriteConfig.likesCollectionId,
       ID.unique(),
       { user: userId, post: postId, emoji }
     );
-  }
 
-  // One atomic write instead of reading the entire likes collection.
-  if (isNewLike) {
+    // Atomic: no full likes collection scan and safe under concurrency.
     await databases.incrementDocumentAttribute(
       appwriteConfig.databaseId,
       appwriteConfig.postCollectionId,
@@ -141,22 +127,17 @@ export async function likePostFast({
       "likesCount",
       1
     );
+  } else {
+    result = await databases.updateDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.likesCollectionId,
+      existing.documents[0].$id,
+      { emoji }
+    );
   }
 
-  // Notification is intentionally independent of the counter path.
-  await createNotification({
-    type: "like",
-    receiver: (await databases.getDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.postCollectionId,
-      postId,
-      [Query.select(["creator"])]
-    )).creator,
-    sender: userId,
-    postId,
-    emoji,
-  });
-
+  // Keep the interaction path focused on the like itself. Notification
+  // delivery can be moved to an Appwrite Function/queue in phase 2.
   return result;
 }
 
