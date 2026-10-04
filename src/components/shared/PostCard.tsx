@@ -16,10 +16,6 @@ import comment from "../../../public/assetss/icons/message-text-1-svgrepo-com (4
 import {
   useDeletePost,
   useGetCurrentUser,
-  useLikePost,
-  useSavePost,
-  useDeleteSavedPost,
-  useGetSavedPost,
   useReportPost,
 } from "@/lib/react-query/queriesAndMutations";
 
@@ -323,34 +319,9 @@ const PostCard = ({
 
 
   const {
-    mutate: likePost,
-    isPending: isLiking,
-  } = useLikePost();
-
-
-  const {
-    mutate: savePost,
-    isPending: isSaving,
-  } = useSavePost();
-
-
-  const {
-    mutate: deleteSavedPost,
-    isPending: isDeletingSave,
-  } = useDeleteSavedPost();
-
-
-  const {
     mutateAsync: reportPost,
     isPending: isReporting,
   } = useReportPost();
-
-
-  const {
-    data: savedPosts,
-  } = useGetSavedPost(
-    currentUser?.$id || ""
-  );
 
 
   // ====================================================
@@ -385,21 +356,6 @@ const PostCard = ({
   // ====================================================
   // SAVE STATE
   // ====================================================
-
-  const [isSaved, setIsSaved] =
-    useState(false);
-
-  const [savedRecordId, setSavedRecordId] =
-    useState<string | null>(null);
-
-
-  // ====================================================
-  // LIKE STATE
-  // ====================================================
-
-  const [isLiked, setIsLiked] =
-    useState(false);
-
 
   // ====================================================
   // REPORT
@@ -476,179 +432,6 @@ const PostCard = ({
       clearTimeout(timer);
 
   }, []);
-
-
-  // ====================================================
-  // CHECK LIKE
-  // ====================================================
-
-  useEffect(() => {
-
-    if (!currentUser) return;
-
-
-    const liked =
-      post.likes?.some(
-        (like: any) =>
-
-          like.user === currentUser.$id ||
-
-          like.user?.$id ===
-            currentUser.$id ||
-
-          like.userId ===
-            currentUser.$id
-      );
-
-
-    setIsLiked(!!liked);
-
-  }, [
-    post.likes,
-    currentUser,
-  ]);
-
-
-  // ====================================================
-  // CHECK SAVE
-  // ====================================================
-
-  useEffect(() => {
-
-    if (
-      !post ||
-      !savedPosts?.documents
-    ) {
-      return;
-    }
-
-
-    const saved =
-      savedPosts.documents.find(
-        (item: any) => {
-
-          const savedPostId =
-            typeof item.post ===
-            "string"
-              ? item.post
-              : item.post?.$id;
-
-
-          return (
-            savedPostId ===
-            post.$id
-          );
-
-        }
-      );
-
-
-    if (saved) {
-
-      setIsSaved(true);
-
-      setSavedRecordId(
-        saved.$id
-      );
-
-    } else {
-
-      setIsSaved(false);
-
-      setSavedRecordId(null);
-
-    }
-
-  }, [
-    post,
-    savedPosts,
-  ]);
-
-
-  // ====================================================
-  // LIKE
-  // ====================================================
-
-  const handleLike = () => {
-
-    if (
-      !currentUser ||
-      isLiking
-    ) {
-      return;
-    }
-
-
-    setIsLiked(
-      (prev) => !prev
-    );
-
-
-    likePost({
-      postId: post.$id,
-      userId: currentUser.$id,
-      emoji: "❤️",
-    });
-
-  };
-
-
-  // ====================================================
-  // SAVE / UNSAVE
-  // ====================================================
-
-  const handleSave = () => {
-
-    if (
-      !currentUser ||
-      isSaving ||
-      isDeletingSave
-    ) {
-      return;
-    }
-
-
-    // UNSAVE
-
-    if (
-      isSaved &&
-      savedRecordId
-    ) {
-
-      setIsSaved(false);
-
-
-      deleteSavedPost({
-
-        savedRecordId,
-
-        postId: post.$id,
-
-        userId:
-          currentUser.$id,
-
-      });
-
-
-      return;
-    }
-
-
-    // SAVE
-
-    setIsSaved(true);
-
-
-    savePost({
-
-      postId: post.$id,
-
-      userId:
-        currentUser.$id,
-
-    });
-
-  };
 
 
   // ====================================================
@@ -770,14 +553,6 @@ const PostCard = ({
   // ====================================================
   // COUNTS
   // ====================================================
-
-  const likeCount =
-    post.likes?.length || 0;
-
-
-  const saveCount =
-    post.savesCount || 0;
-
 
   const repostCount =
     post.repostCount || 0;
