@@ -167,7 +167,7 @@ export const useLikePost = () => {
       };
     },
     onSuccess: (data, variables, context) => {
-      if (data?.action === "created") {
+      if (data?.action === "created" || data?.action === "removed") {
         updateCachedPost(queryClient, variables.postId, {
           likesCount: data.likesCount,
           topScore: data.topScore,
