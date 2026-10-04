@@ -241,3 +241,78 @@ export async function getNotesFast() {
     [Query.greaterThan("expiresAt", new Date().toISOString()), Query.orderDesc("$createdAt"), Query.limit(50)]
   );
 }
+
+
+export async function followUserFast(followerId: string, followingId: string) {
+  if (!followerId || !followingId || followerId === followingId) return null;
+
+  try {
+    const follow = await databases.createDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.followsCollectionId,
+      ID.unique(),
+      { followerId, followingId }
+    );
+
+    await Promise.all([
+      databases.incrementDocumentAttribute(
+        appwriteConfig.databaseId,
+        appwriteConfig.userCollectionId,
+        followerId,
+        "followingCount",
+        1
+      ),
+      databases.incrementDocumentAttribute(
+        appwriteConfig.databaseId,
+        appwriteConfig.userCollectionId,
+        followingId,
+        "followersCount",
+        1
+      ),
+    ]);
+
+    return follow;
+  } catch (error: any) {
+    if (error?.code === 409) return null;
+    throw error;
+  }
+}
+
+export async function unfollowUserFast(followerId: string, followingId: string) {
+  const existing = await databases.listDocuments(
+    appwriteConfig.databaseId,
+    appwriteConfig.followsCollectionId,
+    [
+      Query.equal("followerId", followerId),
+      Query.equal("followingId", followingId),
+      Query.limit(1),
+    ]
+  );
+
+  if (!existing.documents.length) return null;
+
+  await databases.deleteDocument(
+    appwriteConfig.databaseId,
+    appwriteConfig.followsCollectionId,
+    existing.documents[0].$id
+  );
+
+  await Promise.all([
+    databases.decrementDocumentAttribute(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      followerId,
+      "followingCount",
+      1
+    ),
+    databases.decrementDocumentAttribute(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      followingId,
+      "followersCount",
+      1
+    ),
+  ]);
+
+  return true;
+}
