@@ -39,7 +39,7 @@ export const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
-      refetchOnMount: false,
+      // Reuse fresh persisted data, but refresh stale data when a screen mounts.      refetchOnMount: true,
     },
     mutations: {
       retry: 0,
