@@ -196,13 +196,51 @@ export function calculateScores(post: any) {
 
 export const useSavePost = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: ({ postId, userId }: { postId: string; userId: string }) => savePostFast(postId, userId),
-    onSuccess: (_data, variables) => {
-      const detail = queryClient.getQueryData<any>([QUERY_KEYS.GET_POST_BY_ID, variables.postId]);
-      const current = detail?.savesCount ?? 0;
-      updateCachedPost(queryClient, variables.postId, { savesCount: current + 1 });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_SAVED_POSTS, variables.userId] });
+    mutationFn: ({ postId, userId }: { postId: string; userId: string }) =>
+      savePostFast(postId, userId),
+
+    onMutate: async ({ postId, userId }) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.GET_POST_BY_ID, postId] });
+
+      const detail = queryClient.getQueryData<any>([
+        QUERY_KEYS.GET_POST_BY_ID,
+        postId,
+      ]);
+      const previousCount = detail?.savesCount ?? 0;
+
+      updateCachedPost(queryClient, postId, {
+        savesCount: previousCount + 1,
+      });
+
+      return { postId, userId, previousCount };
+    },
+
+    onError: (_error, variables, context) => {
+      if (!context) return;
+
+      updateCachedPost(queryClient, variables.postId, {
+        savesCount: context.previousCount,
+      });
+    },
+
+    onSuccess: (data, variables) => {
+      // A 409 means the save already existed. Do not leave an optimistic
+      // +1 behind in that case.
+      if (!data) {
+        const detail = queryClient.getQueryData<any>([
+          QUERY_KEYS.GET_POST_BY_ID,
+          variables.postId,
+        ]);
+        updateCachedPost(queryClient, variables.postId, {
+          savesCount: Math.max(0, (detail?.savesCount ?? 1) - 1),
+        });
+      }
+
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_SAVED_POSTS, variables.userId],
+      });
     },
   });
 };
@@ -423,24 +461,88 @@ export const useGetUserAnalytics = (userId: string) => useQuery({
 
 export const useFollowUser = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: ({ followerId, followingId }: { followerId: string; followingId: string }) => followUserFast(followerId, followingId),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_FOLLOWERS, variables.followingId] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_FOLLOWING, variables.followerId] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CHECK_IS_FOLLOWING, variables.followerId, variables.followingId] });
+    mutationFn: ({ followerId, followingId }: { followerId: string; followingId: string }) =>
+      followUserFast(followerId, followingId),
+
+    onMutate: async ({ followerId, followingId }) => {
+      await queryClient.cancelQueries({
+        queryKey: [QUERY_KEYS.CHECK_IS_FOLLOWING, followerId, followingId],
+      });
+
+      const previous = queryClient.getQueryData<any>([
+        QUERY_KEYS.CHECK_IS_FOLLOWING,
+        followerId,
+        followingId,
+      ]);
+
+      queryClient.setQueryData(
+        [QUERY_KEYS.CHECK_IS_FOLLOWING, followerId, followingId],
+        true
+      );
+
+      return { previous };
+    },
+
+    onError: (_error, variables, context) => {
+      queryClient.setQueryData(
+        [QUERY_KEYS.CHECK_IS_FOLLOWING, variables.followerId, variables.followingId],
+        context?.previous ?? false
+      );
+    },
+
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_FOLLOWERS, variables.followingId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_FOLLOWING, variables.followerId],
+      });
     },
   });
 };
 
 export const useUnfollowUser = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: ({ followerId, followingId }: { followerId: string; followingId: string }) => unfollowUserFast(followerId, followingId),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_FOLLOWERS, variables.followingId] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_FOLLOWING, variables.followerId] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CHECK_IS_FOLLOWING, variables.followerId, variables.followingId] });
+    mutationFn: ({ followerId, followingId }: { followerId: string; followingId: string }) =>
+      unfollowUserFast(followerId, followingId),
+
+    onMutate: async ({ followerId, followingId }) => {
+      await queryClient.cancelQueries({
+        queryKey: [QUERY_KEYS.CHECK_IS_FOLLOWING, followerId, followingId],
+      });
+
+      const previous = queryClient.getQueryData<any>([
+        QUERY_KEYS.CHECK_IS_FOLLOWING,
+        followerId,
+        followingId,
+      ]);
+
+      queryClient.setQueryData(
+        [QUERY_KEYS.CHECK_IS_FOLLOWING, followerId, followingId],
+        false
+      );
+
+      return { previous };
+    },
+
+    onError: (_error, variables, context) => {
+      queryClient.setQueryData(
+        [QUERY_KEYS.CHECK_IS_FOLLOWING, variables.followerId, variables.followingId],
+        context?.previous ?? true
+      );
+    },
+
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_FOLLOWERS, variables.followingId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_FOLLOWING, variables.followerId],
+      });
     },
   });
 };
