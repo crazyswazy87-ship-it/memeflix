@@ -912,20 +912,20 @@ const PostCard = ({
 
           <div className="post-img-wrapper">
 
-            {/* BLURRED PREVIEW */}
-
-            <img
-              src={
-                post.previewUrl ||
-                post.imageUrl
-              }
-              alt="preview"
-              className={`post-img ${
-                imgLoaded
-                  ? "sharp"
-                  : "blur"
-              }`}
-            />
+            {/* Only request a second image when a real preview exists. */}
+            {post.previewUrl && (
+              <img
+                src={post.previewUrl}
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                className={`post-img ${
+                  imgLoaded
+                    ? "sharp"
+                    : "blur"
+                }`}
+              />
+            )}
 
 
             {/* REAL IMAGE */}
