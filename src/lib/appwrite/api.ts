@@ -545,33 +545,26 @@ export async function getNotifications(userId: string) {
       [
         Query.equal("receiver", userId),
         Query.orderDesc("$createdAt"),
-         Query.limit(50),
+        Query.limit(50),
+        Query.select([
+          "*",
+          "sender.$id",
+          "sender.name",
+          "sender.username",
+          "sender.imageUrl",
+          "sender.isVerified",
+        ]),
       ]
     );
 
-    //attaching sender manually
-    const enriched = await Promise.all(
-      res.documents.map(async (n: any) => {
-        try {
-          const sender = await databases.getDocument(
-            appwriteConfig.databaseId,
-            appwriteConfig.userCollectionId,
-            n.sender // this is ID
-          );
-
-          return { ...n, sender };
-        } catch {
-          return { ...n, sender: null };
-        }
-      })
-    );
-
-    return { ...res, documents: enriched };
+    // The sender relationship is selected with the notification query.
+    // This removes the old N+1 pattern (one user request per notification).
+    return res;
   } catch (error) {
     console.log(error);
+    return { documents: [], total: 0 };
   }
 }
-
 
 export async function deleteFile(fileId: string) {
   try {
@@ -928,42 +921,45 @@ export async function deletePost(postId: string, imageid: string) {
 }
 
 
-export async function getPostsWithLikes(posts) {
-  const postsWithLikes = await Promise.all(
-    posts.map(async (post) => {
-      const likes = await databases.listDocuments(
-        appwriteConfig.databaseId,
-        appwriteConfig.likesCollectionId,
-        [Query.equal("post", post.$id)]
-      );
-
-      return {
-        ...post,
-        likesCount: likes.documents.length,
-      };
-    })
-  );
-
-  return postsWithLikes;
+export async function getPostsWithLikes(posts: any[]) {
+  // likesCount is maintained on the post document. Never scan the likes
+  // collection once per post just to calculate a count.
+  return posts.map((post) => ({
+    ...post,
+    likesCount: post.likesCount ?? 0,
+  }));
 }
 
 export async function getInfinitePosts({
   pageParam,
-  mode = "latest", // 👈 add mode: "latest" | "trending"
+  mode = "latest",
+}: {
+  pageParam?: string | null;
+  mode?: "latest" | "trending";
 }) {
   const queries: any[] = [
     Query.limit(20),
-    Query.select(["*", "creator.*"]),
+    Query.select([
+      "*",
+      "creator.$id",
+      "creator.name",
+      "creator.username",
+      "creator.imageUrl",
+      "creator.isVerified",
+    ]),
   ];
 
   if (pageParam) {
     queries.push(Query.cursorAfter(pageParam));
   }
 
-  // ❌ Do NOT force sorting here if trending
-  if (mode === "latest") {
-    queries.push(Query.orderDesc("$updatedAt"));
-  }
+  // Sorting happens in Appwrite using indexed denormalized fields.
+  // We do not fetch every like document and sort in the browser.
+  queries.push(
+    Query.orderDesc(
+      mode === "trending" ? "trendingScore" : "$createdAt"
+    )
+  );
 
   const posts = await databases.listDocuments(
     appwriteConfig.databaseId,
@@ -971,54 +967,35 @@ export async function getInfinitePosts({
     queries
   );
 
-  // Attach likes
-  const postsWithLikes = await getPostsWithLikes(posts.documents);
-
-  //  Apply sorting for trending AFTER likes are attached
-  let finalPosts = postsWithLikes;
-
-  if (mode === "trending") {
-    finalPosts = [...postsWithLikes].sort(
-      (a, b) => (b.likesCount || 0) - (a.likesCount || 0)
-    );
-  }
-
-  return {
-    ...posts,
-    documents: finalPosts,
-  };
+  return posts;
 }
 // ============================== GET POSTS
 export async function searchPosts(searchTerm: string) {
+  const term = searchTerm.trim();
+  if (!term) return { documents: [], total: 0 };
+
   try {
     const posts = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.postCollectionId,
-      [Query.search("caption", searchTerm)]
+      [
+        Query.search("caption", term),
+        Query.limit(30),
+        Query.select([
+          "*",
+          "creator.$id",
+          "creator.name",
+          "creator.username",
+          "creator.imageUrl",
+          "creator.isVerified",
+        ]),
+      ]
     );
 
-    if (!posts) throw Error;
-
-    //Fetch creators manually
-    const postsWithCreators = await Promise.all(
-      posts.documents.map(async (post) => {
-        try {
-          const creator = await databases.getDocument(
-            appwriteConfig.databaseId,
-            appwriteConfig.userCollectionId,
-            post.creator // this is just ID
-          );
-
-          return { ...post, creator };
-        } catch {
-          return { ...post, creator: null };
-        }
-      })
-    );
-
-    return { ...posts, documents: postsWithCreators };
+    return posts;
   } catch (error) {
     console.log(error);
+    return { documents: [], total: 0 };
   }
 }
 
@@ -1512,27 +1489,33 @@ export async function checkIsFollowing(
 }        
 
 export async function getFollowersCount(userId: string) {
-  const res = await databases.listDocuments(
-    appwriteConfig.databaseId,
-    "follows",
-    [
-      Query.equal("followingId", userId),
-    ]
-  );
+  try {
+    const user = await databases.getDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      userId,
+      [Query.select(["followersCount"])]
+    );
 
-  return res.total;
+    return user.followersCount ?? 0;
+  } catch {
+    return 0;
+  }
 }
 
 export async function getFollowingCount(userId: string) {
-  const res = await databases.listDocuments(
-    appwriteConfig.databaseId,
-    "follows",
-    [
-      Query.equal("followerId", userId),
-    ]
-  );
+  try {
+    const user = await databases.getDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      userId,
+      [Query.select(["followingCount"])]
+    );
 
-  return res.total;
+    return user.followingCount ?? 0;
+  } catch {
+    return 0;
+  }
 }
 
 export async function getFollowers(userId: string) {
