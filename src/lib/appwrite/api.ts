@@ -13,7 +13,6 @@ import {
   databases,
   storage,
 } from "./config";
-import { useQuery } from '@tanstack/react-query';
 import { safeTrendingScore } from '../utils';
 
 
@@ -577,21 +576,22 @@ export async function deleteFile(fileId: string) {
 }
 
 export async function getRecentPosts() {
-  const posts = await databases.listDocuments(
+  return databases.listDocuments(
     appwriteConfig.databaseId,
     appwriteConfig.postCollectionId,
-    [Query.orderDesc('$createdAt'),
-     Query.limit(30),
-    Query.select([
-      "*",          
-      "creator.*"    
-    ])
+    [
+      Query.orderDesc("$createdAt"),
+      Query.limit(30),
+      Query.select([
+        "*",
+        "creator.$id",
+        "creator.name",
+        "creator.username",
+        "creator.imageUrl",
+        "creator.isVerified",
+      ]),
     ]
   );
-
-  if (!posts) throw Error;
-
-  return posts; 
 }
 
 export async function likePost({
@@ -833,11 +833,17 @@ export async function getSavedPosts(userId: string) {
       appwriteConfig.savesCollectionId,
       [
         Query.equal("user", userId),
-         Query.select([
-        "*",
-        "post.*",
-        "post.creator.*"
-      ])
+         Query.orderDesc("$createdAt"),
+        Query.limit(50),
+        Query.select([
+          "*",
+          "post.*",
+          "post.creator.$id",
+          "post.creator.name",
+          "post.creator.username",
+          "post.creator.imageUrl",
+          "post.creator.isVerified",
+        ])
       ]
     );
 
@@ -1046,7 +1052,12 @@ export async function getUserById(userId: string) {
     const user = await databases.getDocument(
       appwriteConfig.databaseId,
       appwriteConfig.userCollectionId,
-      userId
+      userId,
+      [
+        Query.select([
+          "*",
+        ]),
+      ]
     );
 
     if (!user) throw new Error("User not found");
@@ -1126,8 +1137,18 @@ export const useGetUserPosts = (userId: string) => {
       const res = await databases.listDocuments(
         appwriteConfig.databaseId,
         appwriteConfig.postCollectionId,
-        [Query.equal("creator", userId),
-         Query.select(["*", "creator.*"])
+        [
+          Query.equal("creator", userId),
+          Query.orderDesc("$createdAt"),
+          Query.limit(50),
+          Query.select([
+            "*",
+            "creator.$id",
+            "creator.name",
+            "creator.username",
+            "creator.imageUrl",
+            "creator.isVerified",
+          ]),
         ]
       );
       return res.documents;
@@ -1524,6 +1545,8 @@ export async function getFollowers(userId: string) {
     "follows",
     [
       Query.equal("followingId", userId),
+      Query.limit(100),
+      Query.orderDesc("$createdAt"),
     ]
   );
 
@@ -1536,6 +1559,8 @@ export async function getFollowing(userId: string) {
     "follows",
     [
       Query.equal("followerId", userId),
+      Query.limit(100),
+      Query.orderDesc("$createdAt"),
     ]
   );
 
