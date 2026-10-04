@@ -12,6 +12,7 @@ export const appwriteConfig =  {
   likesCollectionId: import.meta.env.VITE_APPWRITE_LIKES_COLLECTION_ID,
   followsCollectionId:  import.meta.env.VITE_APPWRITE_FOLLOWS_COLLECTION_ID,
   notesCollectionId: import.meta.env.VITE_APPWRITE_NOTES_COLLECTION_ID,
+  cacheFunctionUrl: import.meta.env.VITE_MEMEFLIX_CACHE_FUNCTION_URL || "",
 }
 
 export const client = new Client();
