@@ -223,7 +223,7 @@ export async function savePostFast(postId: string, userId: string) {
       scores
     );
 
-    return { saved, savesCount: post.savesCount ?? 1, ...scores };
+    return { saved, savedRecordId: saved.$id, savesCount: post.savesCount ?? 1, ...scores };
   } catch (error: any) {
     if (error?.code === 409) return null;
     throw error;
