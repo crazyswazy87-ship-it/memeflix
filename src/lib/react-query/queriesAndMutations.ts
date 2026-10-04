@@ -283,7 +283,7 @@ export const useDeleteSavedPost = () => {
   });
 };
 
-export const useGetSavedPosts = (userId: string) => useQuery({
+export const useGetSavedPosts = (userId?: string) => useQuery({
   queryKey: [QUERY_KEYS.GET_SAVED_POSTS, userId],
   queryFn: () => getSavedPosts(userId),
   enabled: !!userId,
@@ -402,7 +402,7 @@ export const useUpdateUser = () => {
   });
 };
 
-export const useGetSavedPost = (userId: string) => useQuery({
+export const useGetSavedPost = (userId?: string) => useQuery({
   queryKey: [QUERY_KEYS.GET_SAVED_POSTS, userId],
   queryFn: () => getSavedPosts(userId),
   enabled: !!userId,
