@@ -620,7 +620,6 @@ export async function likePost({
       ]
     );
 
-    let isNewLike = false;
     let result;
 
     if (existing.documents.length > 0) {
@@ -632,8 +631,6 @@ export async function likePost({
         { emoji }
       );
     } else {
-      isNewLike = true;
-
       result = await databases.createDocument(
         appwriteConfig.databaseId,
         appwriteConfig.likesCollectionId,
