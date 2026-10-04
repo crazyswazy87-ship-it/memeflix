@@ -203,7 +203,7 @@ export async function likePostFast({ postId, userId, emoji }: {
     scores
   );
 
-  await createPostNotificationFast(
+  void createPostNotificationFast(
     "like",
     typeof post.creator === "string" ? post.creator : post.creator?.$id,
     userId,
@@ -244,7 +244,7 @@ export async function savePostFast(postId: string, userId: string) {
       scores
     );
 
-    await createPostNotificationFast(
+    void createPostNotificationFast(
       "save",
       typeof post.creator === "string" ? post.creator : post.creator?.$id,
       userId,
