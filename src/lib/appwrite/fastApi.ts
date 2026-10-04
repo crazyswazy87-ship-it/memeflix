@@ -270,7 +270,8 @@ export async function deleteSavedPostFast(savedRecordId: string, postId: string)
     appwriteConfig.postCollectionId,
     postId,
     "savesCount",
-    1
+    1,
+    0
   );
 
   const scores = calculatePostScores(post);
@@ -475,14 +476,16 @@ export async function followUserFast(followerId: string, followingId: string) {
         appwriteConfig.userCollectionId,
         followerId,
         "followingCount",
-        1
+        1,
+        0
       ),
       databases.incrementDocumentAttribute(
         appwriteConfig.databaseId,
         appwriteConfig.userCollectionId,
         followingId,
         "followersCount",
-        1
+        1,
+        0
       ),
       createFollowNotificationFast(followingId, followerId),
     ]);
@@ -519,14 +522,16 @@ export async function unfollowUserFast(followerId: string, followingId: string) 
       appwriteConfig.userCollectionId,
       followerId,
       "followingCount",
-      1
+      1,
+      0
     ),
     databases.decrementDocumentAttribute(
       appwriteConfig.databaseId,
       appwriteConfig.userCollectionId,
       followingId,
       "followersCount",
-      1
+      1,
+      0
     ),
   ]);
 
