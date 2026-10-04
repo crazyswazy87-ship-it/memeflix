@@ -272,7 +272,7 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
           if (data) {
 
             setSavedRecordId(
-              data.$id
+              data.savedRecordId
             );
 
           }
