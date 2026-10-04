@@ -131,9 +131,9 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
   );
 
   useEffect(() => {
-    if (!post?.$id || !savedPosts?.documents) return;
+    if (!post?.$id || !savedPosts) return;
 
-    const record = savedPosts.documents.find(
+    const record = savedPosts.find(
       (item: any) =>
         (typeof item.post === "string" ? item.post : item.post?.$id) === post.$id
     );
