@@ -154,23 +154,33 @@ export const useLikePost = () => {
     onMutate: async ({ postId }) => {
       await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.GET_POST_BY_ID, postId] });
       const detail = queryClient.getQueryData<any>([QUERY_KEYS.GET_POST_BY_ID, postId]);
-      const previousCount = detail?.likesCount ?? null;
 
-      // Update all mounted copies without waiting for Appwrite.
-      queryClient.setQueriesData(
-        { queryKey: [QUERY_KEYS.GET_RECENT_POSTS] },
-        (old: any) => updatePostInValue(old, postId, {
-          likesCount: ((old?.documents?.find?.((p: any) => p?.$id === postId)?.likesCount) ?? previousCount ?? 0) + 1,
-        })
-      );
-      updateCachedPost(queryClient, postId, {
-        likesCount: (previousCount ?? 0) + 1,
-      });
-
-      return { postId, previousCount };
+      return {
+        postId,
+        previous: detail
+          ? {
+              likesCount: detail.likesCount,
+              topScore: detail.topScore,
+              trendingScore: detail.trendingScore,
+            }
+          : null,
+      };
+    },
+    onSuccess: (data, variables, context) => {
+      if (data?.action === "created") {
+        updateCachedPost(queryClient, variables.postId, {
+          likesCount: data.likesCount,
+          topScore: data.topScore,
+          trendingScore: data.trendingScore,
+        });
+      } else if (data?.action === "changed" && context?.previous) {
+        updateCachedPost(queryClient, variables.postId, context.previous);
+      }
     },
     onError: (_error, variables, context) => {
-      if (context) updateCachedPost(queryClient, variables.postId, { likesCount: context.previousCount });
+      if (context?.previous) {
+        updateCachedPost(queryClient, variables.postId, context.previous);
+      }
     },
     onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_POST_BY_ID, variables.postId] });
@@ -208,33 +218,37 @@ export const useSavePost = () => {
         QUERY_KEYS.GET_POST_BY_ID,
         postId,
       ]);
-      const previousCount = detail?.savesCount ?? 0;
+      const previousCount = typeof detail?.savesCount === "number"
+        ? detail.savesCount
+        : null;
 
-      updateCachedPost(queryClient, postId, {
-        savesCount: previousCount + 1,
-      });
+      if (previousCount !== null) {
+        updateCachedPost(queryClient, postId, {
+          savesCount: previousCount + 1,
+        });
+      }
 
       return { postId, userId, previousCount };
     },
 
     onError: (_error, variables, context) => {
-      if (!context) return;
-
-      updateCachedPost(queryClient, variables.postId, {
-        savesCount: context.previousCount,
-      });
+      if (context?.previousCount !== null && context?.previousCount !== undefined) {
+        updateCachedPost(queryClient, variables.postId, {
+          savesCount: context.previousCount,
+        });
+      }
     },
 
-    onSuccess: (data, variables) => {
-      // A 409 means the save already existed. Do not leave an optimistic
-      // +1 behind in that case.
-      if (!data) {
-        const detail = queryClient.getQueryData<any>([
-          QUERY_KEYS.GET_POST_BY_ID,
-          variables.postId,
-        ]);
+    onSuccess: (data, variables, context) => {
+      if (data) {
         updateCachedPost(queryClient, variables.postId, {
-          savesCount: Math.max(0, (detail?.savesCount ?? 1) - 1),
+          savesCount: data.savesCount,
+          topScore: data.topScore,
+          trendingScore: data.trendingScore,
+        });
+      } else if (context?.previousCount !== null && context?.previousCount !== undefined) {
+        updateCachedPost(queryClient, variables.postId, {
+          savesCount: context.previousCount,
         });
       }
 
