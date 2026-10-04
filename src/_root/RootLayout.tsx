@@ -10,11 +10,15 @@ import explore from "../../public/assetss/icons/slider-horizontal-1-svgrepo-com 
 import saved from "../../public/assetss/icons/archive-1-svgrepo-com (1).svg"
 import publish from "../../public/assetss/icons/gallery-add-svgrepo-com.svg"
 import { BottomNavBar } from '@/components/shared/BottomNavBar'
+import { useGetCurrentUser } from '@/lib/react-query/queriesAndMutations'
+import { useRealtimeNotifications } from '@/lib/react-query/useRealtimeNotifications'
 
 
 export const RootLayout = () => {
 
   const navigate = useNavigate();
+  const { data: currentUser } = useGetCurrentUser();
+  useRealtimeNotifications(currentUser?.$id);
 
   //dock
   const itemd = [
