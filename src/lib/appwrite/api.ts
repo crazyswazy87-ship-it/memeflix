@@ -1224,68 +1224,120 @@ type GetExplorePostsProps = {
 //emza
 export async function getAdminAnalytics() {
   try {
+    // Preferred path: one tiny aggregate document maintained by server-side
+    // event handlers/functions. This avoids downloading hundreds/thousands of posts.
+    try {
+      const stats = await databases.getDocument(
+        appwriteConfig.databaseId,
+        "platform_stats",
+        "global",
+        [Query.select([
+          "users",
+          "posts",
+          "follows",
+          "totalLikes",
+          "totalSaves",
+          "totalReposts",
+          "totalEngagement",
+        ])]
+      );
+
+      const [topPostsRes, recentPostsRes] = await Promise.all([
+        databases.listDocuments(
+          appwriteConfig.databaseId,
+          appwriteConfig.postCollectionId,
+          [
+            Query.orderDesc("topScore"),
+            Query.limit(10),
+            Query.select([
+              "*",
+              "creator.$id",
+              "creator.name",
+              "creator.username",
+              "creator.imageUrl",
+              "creator.isVerified",
+            ]),
+          ]
+        ),
+        databases.listDocuments(
+          appwriteConfig.databaseId,
+          appwriteConfig.postCollectionId,
+          [
+            Query.orderDesc("$createdAt"),
+            Query.limit(10),
+            Query.select([
+              "*",
+              "creator.$id",
+              "creator.name",
+              "creator.username",
+              "creator.imageUrl",
+              "creator.isVerified",
+            ]),
+          ]
+        ),
+      ]);
+
+      return {
+        users: stats.users ?? 0,
+        posts: stats.posts ?? 0,
+        follows: stats.follows ?? 0,
+        totalLikes: stats.totalLikes ?? 0,
+        totalSaves: stats.totalSaves ?? 0,
+        totalReposts: stats.totalReposts ?? 0,
+        totalEngagement: stats.totalEngagement ?? 0,
+        topPosts: topPostsRes.documents,
+        recentPostsCount: recentPostsRes.documents.length,
+        rawPosts: [],
+      };
+    } catch {
+      // Backward-compatible fallback until platform_stats is created/populated.
+      console.warn("platform_stats unavailable; using legacy analytics fallback.");
+    }
+
     const [postsRes, usersRes, followsRes] = await Promise.all([
       databases.listDocuments(
         appwriteConfig.databaseId,
         appwriteConfig.postCollectionId,
-        [Query.limit(1000)]
+        [Query.limit(1000), Query.select(["$id", "$createdAt", "likesCount", "savesCount", "repostCount", "topScore"])]
       ),
-
       databases.listDocuments(
         appwriteConfig.databaseId,
         appwriteConfig.userCollectionId,
-        [Query.limit(1000)]
+        [Query.limit(1), Query.select(["$id"])]
       ),
-
       databases.listDocuments(
         appwriteConfig.databaseId,
         "follows",
-        [Query.limit(1000)]
+        [Query.limit(1), Query.select(["$id"])]
       ),
     ]);
 
     const posts = postsRes.documents;
-
-    // CORE PLATFORM METRICS
     const totalLikes = posts.reduce((sum, p) => sum + (p.likesCount || 0), 0);
     const totalSaves = posts.reduce((sum, p) => sum + (p.savesCount || 0), 0);
     const totalReposts = posts.reduce((sum, p) => sum + (p.repostCount || 0), 0);
-
-    // ENGAGEMENT RATE
-    const totalEngagement = totalLikes + totalSaves + totalReposts;
-
-    // TOP POSTS (important for admin panel)
-    const topPosts = [...posts]
-      .sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0))
-      .slice(0, 10);
-
-    // GROWTH SIGNAL
-    const recentPosts = posts.filter((p) => {
-      const created = new Date(p.$createdAt);
-      const now = new Date();
-      return now.getTime() - created.getTime() < 7 * 24 * 60 * 60 * 1000;
-    });
 
     return {
       users: usersRes.total,
       posts: postsRes.total,
       follows: followsRes.total,
-
       totalLikes,
       totalSaves,
       totalReposts,
-      totalEngagement,
-
-      topPosts,
-      recentPostsCount: recentPosts.length,
-      rawPosts: posts,
+      totalEngagement: totalLikes + totalSaves + totalReposts,
+      topPosts: [...posts]
+        .sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0))
+        .slice(0, 10),
+      recentPostsCount: posts.filter((p) =>
+        Date.now() - new Date(p.$createdAt).getTime() < 7 * 24 * 60 * 60 * 1000
+      ).length,
+      rawPosts: [],
     };
   } catch (err) {
     console.error("Admin analytics error:", err);
     return null;
   }
 }
-
 
 export const getExplorePosts = async ({
   pageParam,
