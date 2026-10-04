@@ -392,12 +392,16 @@ const SkeletonCard = () => (
                 )}
 
                 <div className="post-img-wrapper">
-              {/* BLUR PREVIEW */}
-              <img
-                src={post.previewUrl || post.imageUrl}
-                alt="preview"
-                className={`post-img ${loadedImages[post.$id] ? "sharp" : "blur"}`}
-              />
+              {/* Only load a separate preview when one exists. */}
+              {post.previewUrl && (
+                <img
+                  src={post.previewUrl}
+                  alt=""
+                  aria-hidden="true"
+                  loading="lazy"
+                  className={`post-img ${loadedImages[post.$id] ? "sharp" : "blur"}`}
+                />
+              )}
 
               {/* FULL IMAGE */}
               <img
