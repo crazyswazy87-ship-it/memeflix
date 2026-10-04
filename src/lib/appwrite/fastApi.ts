@@ -393,33 +393,38 @@ async function createPostNotificationFast(
 ) {
   if (!receiver || receiver === sender) return null;
 
-  const existing = await databases.listDocuments(
-    appwriteConfig.databaseId,
-    "notifications",
-    [
-      Query.equal("type", type),
-      Query.equal("sender", sender),
-      Query.equal("receiver", receiver),
-      Query.equal("post", postId),
-      Query.limit(1),
-    ]
-  );
+  try {
+    const existing = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      "notifications",
+      [
+        Query.equal("type", type),
+        Query.equal("sender", sender),
+        Query.equal("receiver", receiver),
+        Query.equal("post", postId),
+        Query.limit(1),
+      ]
+    );
 
-  if (existing.documents.length > 0) return null;
+    if (existing.documents.length > 0) return null;
 
-  return databases.createDocument(
-    appwriteConfig.databaseId,
-    "notifications",
-    ID.unique(),
-    {
-      type,
-      receiver,
-      sender,
-      post: postId,
-      emoji: emoji ?? null,
-      isRead: false,
-    }
-  );
+    return await databases.createDocument(
+      appwriteConfig.databaseId,
+      "notifications",
+      ID.unique(),
+      {
+        type,
+        receiver,
+        sender,
+        post: postId,
+        emoji: emoji ?? null,
+        isRead: false,
+      }
+    );
+  } catch {
+    // A notification failure must never fail the underlying reaction.
+    return null;
+  }
 }
 
 async function createFollowNotificationFast(receiver: string, sender: string) {
