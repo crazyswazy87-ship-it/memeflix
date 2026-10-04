@@ -434,7 +434,8 @@ export async function createPost(post: INewPost) {
     return newPost;
 
   } catch (error) {
-    console.log(error);
+    console.error("CREATE POST ERROR:", error);
+    throw error;
   }
 }
 
