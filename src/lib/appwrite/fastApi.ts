@@ -1,6 +1,7 @@
 import { ID, Query } from "appwrite";
 
 import { appwriteConfig, databases } from "./config";
+import { createNotification } from "./api";
 
 const postSelect = [
   "*",
@@ -269,6 +270,11 @@ export async function followUserFast(followerId: string, followingId: string) {
         "followersCount",
         1
       ),
+      createNotification({
+        type: "follow",
+        receiver: followingId,
+        sender: followerId,
+      }),
     ]);
 
     return follow;
