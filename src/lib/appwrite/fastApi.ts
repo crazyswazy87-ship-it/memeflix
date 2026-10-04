@@ -2,16 +2,6 @@ import { ID, Query } from "appwrite";
 
 import { appwriteConfig, databases } from "./config";
 
-/**
- * Performance-first database paths.
- *
- * Rules:
- * - Never scan a child collection just to calculate a stored counter.
- * - Use counters already stored on post documents.
- * - Use Appwrite atomic numeric operations for counters.
- * - Keep feed payloads small and paginated.
- */
-
 const postSelect = [
   "*",
   "creator.$id",
@@ -25,28 +15,14 @@ export async function getRecentPostsFast() {
   return databases.listDocuments(
     appwriteConfig.databaseId,
     appwriteConfig.postCollectionId,
-    [
-      Query.orderDesc("$createdAt"),
-      Query.limit(20),
-      Query.select(postSelect),
-    ]
+    [Query.orderDesc("$createdAt"), Query.limit(20), Query.select(postSelect)]
   );
 }
 
 export async function getInfinitePostsFast({ pageParam }: { pageParam?: string | null }) {
-  const queries = [
-    Query.limit(20),
-    Query.orderDesc("$createdAt"),
-    Query.select(postSelect),
-  ];
-
+  const queries = [Query.limit(20), Query.orderDesc("$createdAt"), Query.select(postSelect)];
   if (pageParam) queries.push(Query.cursorAfter(pageParam));
-
-  return databases.listDocuments(
-    appwriteConfig.databaseId,
-    appwriteConfig.postCollectionId,
-    queries
-  );
+  return databases.listDocuments(appwriteConfig.databaseId, appwriteConfig.postCollectionId, queries);
 }
 
 export async function getExplorePostsFast({
@@ -61,7 +37,6 @@ export async function getExplorePostsFast({
     Query.select(postSelect),
     Query.orderDesc(mode === "top" ? "topScore" : "trendingScore"),
   ];
-
   if (pageParam) queries.push(Query.cursorAfter(pageParam));
 
   const response = await databases.listDocuments(
@@ -73,10 +48,9 @@ export async function getExplorePostsFast({
   return {
     documents: response.documents,
     total: response.total,
-    nextCursor:
-      response.documents.length === 10
-        ? response.documents[response.documents.length - 1].$id
-        : null,
+    nextCursor: response.documents.length === 10
+      ? response.documents[response.documents.length - 1].$id
+      : null,
   };
 }
 
@@ -89,11 +63,7 @@ export async function getPostByIdFast(postId: string) {
   );
 }
 
-export async function likePostFast({
-  postId,
-  userId,
-  emoji,
-}: {
+export async function likePostFast({ postId, userId, emoji }: {
   postId: string;
   userId: string;
   emoji: string;
@@ -101,34 +71,11 @@ export async function likePostFast({
   const existing = await databases.listDocuments(
     appwriteConfig.databaseId,
     appwriteConfig.likesCollectionId,
-    [
-      Query.equal("post", postId),
-      Query.equal("user", userId),
-      Query.limit(1),
-    ]
+    [Query.equal("post", postId), Query.equal("user", userId), Query.limit(1)]
   );
 
-  let result;
-  const isNewLike = existing.documents.length === 0;
-
-  if (isNewLike) {
-    result = await databases.createDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.likesCollectionId,
-      ID.unique(),
-      { user: userId, post: postId, emoji }
-    );
-
-    // Atomic: no full likes collection scan and safe under concurrency.
-    await databases.incrementDocumentAttribute(
-      appwriteConfig.databaseId,
-      appwriteConfig.postCollectionId,
-      postId,
-      "likesCount",
-      1
-    );
-  } else {
-    result = await databases.updateDocument(
+  if (existing.documents.length > 0) {
+    return databases.updateDocument(
       appwriteConfig.databaseId,
       appwriteConfig.likesCollectionId,
       existing.documents[0].$id,
@@ -136,8 +83,21 @@ export async function likePostFast({
     );
   }
 
-  // Keep the interaction path focused on the like itself. Notification
-  // delivery can be moved to an Appwrite Function/queue in phase 2.
+  const result = await databases.createDocument(
+    appwriteConfig.databaseId,
+    appwriteConfig.likesCollectionId,
+    ID.unique(),
+    { user: userId, post: postId, emoji }
+  );
+
+  await databases.incrementDocumentAttribute(
+    appwriteConfig.databaseId,
+    appwriteConfig.postCollectionId,
+    postId,
+    "likesCount",
+    1
+  );
+
   return result;
 }
 
@@ -165,10 +125,7 @@ export async function savePostFast(postId: string, userId: string) {
   }
 }
 
-export async function deleteSavedPostFast(
-  savedRecordId: string,
-  postId: string
-) {
+export async function deleteSavedPostFast(savedRecordId: string, postId: string) {
   await databases.deleteDocument(
     appwriteConfig.databaseId,
     appwriteConfig.savesCollectionId,
@@ -190,11 +147,7 @@ export async function searchPostsFast(searchTerm: string) {
   return databases.listDocuments(
     appwriteConfig.databaseId,
     appwriteConfig.postCollectionId,
-    [
-      Query.search("caption", searchTerm),
-      Query.limit(20),
-      Query.select(postSelect),
-    ]
+    [Query.search("caption", searchTerm), Query.limit(20), Query.select(postSelect)]
   );
 }
 
@@ -205,14 +158,7 @@ export async function searchUsersFast(searchTerm: string) {
     [
       Query.search("username", searchTerm),
       Query.limit(20),
-      Query.select([
-        "$id",
-        "name",
-        "username",
-        "imageUrl",
-        "isVerified",
-        "bio",
-      ]),
+      Query.select(["$id", "name", "username", "imageUrl", "isVerified", "bio"]),
     ]
   );
 }
@@ -224,26 +170,74 @@ export async function getUsersFast(limit = 30) {
     [
       Query.orderDesc("$createdAt"),
       Query.limit(Math.min(limit, 50)),
-      Query.select([
-        "$id",
-        "name",
-        "username",
-        "imageUrl",
-        "isVerified",
-        "bio",
-      ]),
+      Query.select(["$id", "name", "username", "imageUrl", "isVerified", "bio"]),
     ]
   );
+}
+
+export async function getNotificationsFast(userId: string) {
+  const notifications = await databases.listDocuments(
+    appwriteConfig.databaseId,
+    "notifications",
+    [
+      Query.equal("receiver", userId),
+      Query.orderDesc("$createdAt"),
+      Query.limit(50),
+      Query.select(["$id", "$createdAt", "type", "sender", "receiver", "post", "emoji", "isRead"]),
+    ]
+  );
+
+  const senderIds = [...new Set(
+    notifications.documents.map((notification: any) => notification.sender).filter(Boolean)
+  )];
+
+  if (senderIds.length === 0) return { ...notifications, documents: notifications.documents };
+
+  const senders = await databases.listDocuments(
+    appwriteConfig.databaseId,
+    appwriteConfig.userCollectionId,
+    [
+      Query.equal("$id", senderIds),
+      Query.limit(Math.min(senderIds.length, 50)),
+      Query.select(["$id", "name", "username", "imageUrl", "isVerified"]),
+    ]
+  );
+
+  const senderMap = new Map(senders.documents.map((user: any) => [user.$id, user]));
+
+  return {
+    ...notifications,
+    documents: notifications.documents.map((notification: any) => ({
+      ...notification,
+      sender: senderMap.get(notification.sender) ?? null,
+    })),
+  };
+}
+
+export async function getFollowersCountFast(userId: string) {
+  const user = await databases.getDocument(
+    appwriteConfig.databaseId,
+    appwriteConfig.userCollectionId,
+    userId,
+    [Query.select(["followersCount"])]
+  );
+  return user.followersCount ?? 0;
+}
+
+export async function getFollowingCountFast(userId: string) {
+  const user = await databases.getDocument(
+    appwriteConfig.databaseId,
+    appwriteConfig.userCollectionId,
+    userId,
+    [Query.select(["followingCount"])]
+  );
+  return user.followingCount ?? 0;
 }
 
 export async function getNotesFast() {
   return databases.listDocuments(
     appwriteConfig.databaseId,
     appwriteConfig.notesCollectionId,
-    [
-      Query.greaterThan("expiresAt", new Date().toISOString()),
-      Query.orderDesc("$createdAt"),
-      Query.limit(50),
-    ]
+    [Query.greaterThan("expiresAt", new Date().toISOString()), Query.orderDesc("$createdAt"), Query.limit(50)]
   );
 }
