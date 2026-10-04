@@ -1,7 +1,6 @@
 import { ID, Query } from "appwrite";
 
 import { appwriteConfig, databases } from "./config";
-import { createNotification } from "./api";
 
 async function getCachedFeed(mode: "latest" | "top" | "trending", limit: number, cursor?: string | null) {
   const base = appwriteConfig.cacheFunctionUrl;
@@ -277,6 +276,37 @@ export async function getNotesFast() {
 }
 
 
+async function createFollowNotificationFast(receiver: string, sender: string) {
+  if (receiver === sender) return null;
+
+  const existing = await databases.listDocuments(
+    appwriteConfig.databaseId,
+    "notifications",
+    [
+      Query.equal("type", "follow"),
+      Query.equal("sender", sender),
+      Query.equal("receiver", receiver),
+      Query.limit(1),
+    ]
+  );
+
+  if (existing.documents.length > 0) return null;
+
+  return databases.createDocument(
+    appwriteConfig.databaseId,
+    "notifications",
+    ID.unique(),
+    {
+      type: "follow",
+      receiver,
+      sender,
+      post: null,
+      emoji: null,
+      isRead: false,
+    }
+  );
+}
+
 export async function followUserFast(followerId: string, followingId: string) {
   if (!followerId || !followingId || followerId === followingId) return null;
 
@@ -303,11 +333,7 @@ export async function followUserFast(followerId: string, followingId: string) {
         "followersCount",
         1
       ),
-      createNotification({
-        type: "follow",
-        receiver: followingId,
-        sender: followerId,
-      }),
+      createFollowNotificationFast(followingId, followerId),
     ]);
 
     return follow;
