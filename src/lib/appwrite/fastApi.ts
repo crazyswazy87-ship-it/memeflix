@@ -387,7 +387,7 @@ export async function getNotesFast() {
 
 async function createPostNotificationFast(
   type: "like" | "save",
-  receiver: string,
+  receiver: string | undefined,
   sender: string,
   postId: string,
   emoji?: string
