@@ -46,6 +46,9 @@ import {
   savePostFast,
   searchPostsFast,
   searchUsersFast,
+  getNotificationsFast,
+  getFollowersCountFast,
+  getFollowingCountFast,
 } from "../appwrite/fastApi";
 import { safeTrendingScore } from "../utils";
 
@@ -154,8 +157,19 @@ export const useLikePost = () => {
     onMutate: async ({ postId }) => {
       await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.GET_POST_BY_ID, postId] });
       const detail = queryClient.getQueryData<any>([QUERY_KEYS.GET_POST_BY_ID, postId]);
-      const previousCount = detail?.likesCount ?? 0;
-      updateCachedPost(queryClient, postId, { likesCount: previousCount + 1 });
+      const previousCount = detail?.likesCount ?? null;
+
+      // Update all mounted copies without waiting for Appwrite.
+      queryClient.setQueriesData(
+        { queryKey: [QUERY_KEYS.GET_RECENT_POSTS] },
+        (old: any) => updatePostInValue(old, postId, {
+          likesCount: ((old?.documents?.find?.((p: any) => p?.$id === postId)?.likesCount) ?? previousCount ?? 0) + 1,
+        })
+      );
+      updateCachedPost(queryClient, postId, {
+        likesCount: (previousCount ?? 0) + 1,
+      });
+
       return { postId, previousCount };
     },
     onError: (_error, variables, context) => {
@@ -374,7 +388,7 @@ export const useReportPost = () => {
 
 export const useGetNotifications = (userId: string) => useQuery({
   queryKey: ["GET_NOTIFICATIONS", userId],
-  queryFn: () => getNotifications(userId),
+  queryFn: () => getNotificationsFast(userId),
   enabled: !!userId,
   refetchOnWindowFocus: false,
   refetchInterval: 30000,
@@ -464,14 +478,14 @@ export const useIsFollowing = (followerId: string, followingId: string) => useQu
 
 export const useGetFollowersCount = (userId: string) => useQuery({
   queryKey: ["FOLLOWERS_COUNT", userId],
-  queryFn: () => getFollowersCount(userId),
+  queryFn: () => getFollowersCountFast(userId),
   enabled: !!userId,
   staleTime: 1000 * 60 * 2,
 });
 
 export const useGetFollowingCount = (userId: string) => useQuery({
   queryKey: ["FOLLOWING_COUNT", userId],
-  queryFn: () => getFollowingCount(userId),
+  queryFn: () => getFollowingCountFast(userId),
   enabled: !!userId,
   staleTime: 1000 * 60 * 2,
 });
